@@ -1,0 +1,394 @@
+# ************************************************************************************************
+# Warning: YAML source code for Canvas Apps should only be used to review changes made within Power Apps Studio and for minor edits (Preview).
+# Use the maker portal to create and edit your Power Apps.
+# 
+# The schema file for Canvas Apps is available at https://go.microsoft.com/fwlink/?linkid=2304907
+# 
+# For more information, visit https://go.microsoft.com/fwlink/?linkid=2292623
+# ************************************************************************************************
+Screens:
+  scrDesktopReview:
+    Properties:
+      Fill: =gblTheme.Background
+      LoadingSpinnerColor: =gblTheme.Accent
+      OnVisible: |-
+        =Clear(colDesktopQuestions);
+        Clear(colDesktopResponses);
+        Set(gblDesktopReviewData, Blank());
+        Set(gblDesktopReviewCompleted, false);
+        
+        // Initialize Desktop Review Questions
+        ClearCollect(colDesktopQuestions,
+            // Section 1: Permits & Licensing
+            {Section: "Permits & Licensing", Question: "Are all required permits current and valid?", ID: "DR01", Response: "", Notes: ""},
+            {Section: "Permits & Licensing", Question: "Are permit expiration dates within the next 90 days?", ID: "DR02", Response: "", Notes: ""},
+            {Section: "Permits & Licensing", Question: "Does facility type require NPDES permit?", ID: "DR03", Response: "", Notes: ""},
+            {Section: "Permits & Licensing", Question: "Does facility have active Air Quality permit if required?", ID: "DR04", Response: "", Notes: ""},
+            {Section: "Permits & Licensing", Question: "Are all Tier II reports submitted on time?", ID: "DR05", Response: "", Notes: ""},
+            
+            // Section 2: Previous Findings Review
+            {Section: "Previous Findings", Question: "Review previous ECR reports - any unresolved major findings?", ID: "DR06", Response: "", Notes: ""},
+            {Section: "Previous Findings", Question: "Are there recurring violations indicating systemic issues?", ID: "DR07", Response: "", Notes: ""},
+            {Section: "Previous Findings", Question: "Have corrective action deadlines been met?", ID: "DR08", Response: "", Notes: ""},
+            {Section: "Previous Findings", Question: "Review last 3 ECRs - identify trends or patterns", ID: "DR09", Response: "", Notes: ""},
+            
+            // Section 3: Records & Documentation
+            {Section: "Records & Documentation", Question: "Are inspection logs up to date for the past 12 months?", ID: "DR10", Response: "", Notes: ""},
+            {Section: "Records & Documentation", Question: "Are staff training records current and documented?", ID: "DR11", Response: "", Notes: ""},
+            {Section: "Records & Documentation", Question: "Are waste manifests complete and properly filed?", ID: "DR12", Response: "", Notes: ""},
+            {Section: "Records & Documentation", Question: "Is SPCC plan (if applicable) current within 3 years?", ID: "DR13", Response: "", Notes: ""},
+            {Section: "Records & Documentation", Question: "Are chemical inventories updated and accurate?", ID: "DR14", Response: "", Notes: ""},
+            
+            // Section 4: Risk Assessment
+            {Section: "Risk Assessment", Question: "Facility type presents high environmental risk?", ID: "DR15", Response: "", Notes: ""},
+            {Section: "Risk Assessment", Question: "Are there underground storage tanks (USTs) on site?", ID: "DR16", Response: "", Notes: ""},
+            {Section: "Risk Assessment", Question: "Are there above-ground storage tanks (ASTs) on site?", ID: "DR17", Response: "", Notes: ""},
+            {Section: "Risk Assessment", Question: "Does facility handle hazardous materials/waste?", ID: "DR18", Response: "", Notes: ""},
+            {Section: "Risk Assessment", Question: "Is facility located in sensitive environmental area?", ID: "DR19", Response: "", Notes: ""},
+            
+            // Section 5: Compliance History
+            {Section: "Compliance History", Question: "Any EPA or ODEQ violations in past 3 years?", ID: "DR20", Response: "", Notes: ""},
+            {Section: "Compliance History", Question: "Any tribal environmental violations in past year?", ID: "DR21", Response: "", Notes: ""},
+            {Section: "Compliance History", Question: "Outstanding fines or penalties requiring resolution?", ID: "DR22", Response: "", Notes: ""}
+        );
+        
+        UpdateContext({locCurrentSection: "Permits & Licensing"});
+    Children:
+      - hedHeader:
+          Control: Header@0.0.44
+          Properties:
+            BorderColor: =gblTheme.Border
+            BorderThickness: =1
+            Fill: =gblTheme.Accent
+            FontColor: =gblTheme.TextPrimary
+            Height: =gblDevice.HeaderHeight
+            Logo: =HeroImage_CH
+            OnSelect: =Navigate(scrMenu, ScreenTransition.UnCoverRight)
+            Title: ="ECR Desktop Review"
+            TitleFontSize: =22
+      - conMainContent:
+          Control: GroupContainer@1.3.0
+          Variant: verticalAutoLayoutContainer
+          Properties:
+            AlignInContainer: =AlignInContainer.SetByContainer
+            DropShadow: =DropShadow.None
+            Fill: =gblTheme.Background
+            Height: =Parent.Height - gblDevice.HeaderHeight - 100
+            LayoutDirection: =LayoutDirection.Vertical
+            LayoutGap: =20
+            LayoutMinHeight: =100
+            LayoutMinWidth: =250
+            Width: =Min(1200, Parent.Width - 40)
+            X: =(Parent.Width - Self.Width) / 2
+            Y: =gblDevice.HeaderHeight + 20
+          Children:
+            - conFacilitySelection:
+                Control: GroupContainer@1.3.0
+                Variant: ManualLayout
+                Properties:
+                  DropShadow: =DropShadow.Regular
+                  Fill: =gblTheme.Surface
+                  Height: =180
+                  RadiusBottomLeft: =8
+                  RadiusBottomRight: =8
+                  RadiusTopLeft: =8
+                  RadiusTopRight: =8
+                  Width: =Parent.Width
+                Children:
+                  - lblFacilityPrompt:
+                      Control: Label@2.5.1
+                      Properties:
+                        Color: =gblTheme.TextSecondary
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Bold
+                        Height: =30
+                        Size: =18 * gblDevice.FontScale
+                        Text: ="Select Facility for Desktop Review"
+                        Width: =Parent.Width - 40
+                        X: =20
+                        Y: =20
+                  - cmbFacility:
+                      Control: Classic/DropDown@2.3.2
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        ChevronBackground: =gblTheme.Surface
+                        ChevronFill: =gblTheme.Primary
+                        Color: =gblTheme.TextSecondary
+                        DisplayFields: '=["Title"]'
+                        Font: =Font.'Segoe UI'
+                        Height: =50
+                        HintText: ="Select a facility..."
+                        Items: =colFacilities
+                        OnChange: |-
+                          =Set(gblSelectedFacility, Self.Selected);
+                          UpdateContext({locFacilitySelected: true})
+                        SearchFields: '=["Title", "City", "County_x0020_Text"]'
+                        SelectMultiple: =false
+                        Size: =14 * gblDevice.FontScale
+                        Width: =Parent.Width - 40
+                        X: =20
+                        Y: =60
+                  - lblFacilityInfo:
+                      Control: Label@2.5.1
+                      Properties:
+                        Color: =gblTheme.TextTertiary
+                        Font: =Font.'Segoe UI'
+                        Height: =40
+                        Size: =12 * gblDevice.FontScale
+                        Text: |-
+                          =If(
+                              !IsBlank(gblSelectedFacility),
+                              gblSelectedFacility.'Facility Type' & " | " & 
+                              gblSelectedFacility.City & ", " & 
+                              gblSelectedFacility.County_x0020_Text,
+                              "Please select a facility to begin desktop review"
+                          )
+                        Width: =Parent.Width - 40
+                        X: =20
+                        Y: =120
+            - conSectionTabs:
+                Control: GroupContainer@1.3.0
+                Variant: horizontalAutoLayoutContainer
+                Properties:
+                  AlignInContainer: =AlignInContainer.Stretch
+                  DropShadow: =DropShadow.Regular
+                  Fill: =gblTheme.Surface
+                  Height: =80
+                  LayoutDirection: =LayoutDirection.Horizontal
+                  LayoutGap: =10
+                  LayoutMinHeight: =80
+                  LayoutMinWidth: =250
+                  LayoutMode: =LayoutMode.Auto
+                  RadiusBottomLeft: =8
+                  RadiusBottomRight: =8
+                  RadiusTopLeft: =8
+                  RadiusTopRight: =8
+                  Width: =Parent.Width
+                Children:
+                  - galSectionTabs:
+                      Control: Gallery@2.15.0
+                      Variant: BrowseLayout_Horizontal_OneTextVariant_ver5.0
+                      Properties:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        Height: =70
+                        Items: |-
+                          =Distinct(colDesktopQuestions, Section)
+                        ShowScrollbar: =true
+                        TemplateSize: =200
+                        Width: =Parent.Width - 20
+                        WrapCount: =1
+                        X: =10
+                        Y: =5
+                      Children:
+                        - btnSectionTab:
+                            Control: Classic/Button@2.2.0
+                            Properties:
+                              BorderColor: |-
+                                =If(
+                                    locCurrentSection = ThisItem.Result,
+                                    gblTheme.Primary,
+                                    gblTheme.Border
+                                )
+                              BorderThickness: |-
+                                =If(
+                                    locCurrentSection = ThisItem.Result,
+                                    3,
+                                    1
+                                )
+                              Color: |-
+                                =If(
+                                    locCurrentSection = ThisItem.Result,
+                                    gblTheme.Primary,
+                                    gblTheme.TextSecondary
+                                )
+                              Fill: =gblTheme.Surface
+                              Font: =Font.'Segoe UI'
+                              FontWeight: |-
+                                =If(
+                                    locCurrentSection = ThisItem.Result,
+                                    FontWeight.Bold,
+                                    FontWeight.Normal
+                                )
+                              Height: =60
+                              OnSelect: |-
+                                =UpdateContext({locCurrentSection: ThisItem.Result})
+                              RadiusBottomLeft: =6
+                              RadiusBottomRight: =6
+                              RadiusTopLeft: =6
+                              RadiusTopRight: =6
+                              Size: =12 * gblDevice.FontScale
+                              Text: =ThisItem.Result
+                              Width: =Parent.TemplateWidth - 10
+            - galQuestions:
+                Control: Gallery@2.15.0
+                Variant: BrowseLayout_Vertical_TwoTextVariant_ver5.0
+                Properties:
+                  BorderColor: =RGBA(0, 0, 0, 0)
+                  Fill: =gblTheme.Background
+                  Height: =600
+                  Items: |-
+                    =Filter(
+                        colDesktopQuestions,
+                        Section = locCurrentSection
+                    )
+                  ShowScrollbar: =true
+                  TemplateSize: =150
+                  Width: =Parent.Width
+                Children:
+                  - conQuestionCard:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        DropShadow: =DropShadow.Regular
+                        Fill: =gblTheme.Surface
+                        Height: =140
+                        RadiusBottomLeft: =8
+                        RadiusBottomRight: =8
+                        RadiusTopLeft: =8
+                        RadiusTopRight: =8
+                        Width: =Parent.TemplateWidth - 20
+                        X: =10
+                      Children:
+                        - lblQuestionID:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextTertiary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Semibold
+                              Height: =20
+                              Size: =10 * gblDevice.FontScale
+                              Text: =ThisItem.ID
+                              Width: =60
+                              X: =15
+                              Y: =15
+                        - lblQuestion:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              Height: =60
+                              Size: =14 * gblDevice.FontScale
+                              Text: =ThisItem.Question
+                              Width: =Parent.Width - 100
+                              X: =15
+                              Y: =40
+                        - radResponse:
+                            Control: Classic/Radio@2.3.0
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              Default: =ThisItem.Response
+                              Font: =Font.'Segoe UI'
+                              HoverFill: =gblTheme.AccentLight
+                              Items: =["Yes", "No", "N/A", "Needs Review"]
+                              Items.Value: =Value
+                              Layout: =Layout.Horizontal
+                              OnChange: |-
+                                =Patch(
+                                    colDesktopQuestions,
+                                    LookUp(colDesktopQuestions, ID = ThisItem.ID),
+                                    {Response: Self.Selected.Value}
+                                )
+                              RadioBackgroundFill: =gblTheme.Surface
+                              RadioBorderColor: =gblTheme.Border
+                              Size: =11 * gblDevice.FontScale
+                              Width: =Parent.Width - 30
+                              X: =15
+                              Y: =105
+            - conActions:
+                Control: GroupContainer@1.3.0
+                Variant: ManualLayout
+                Properties:
+                  AlignInContainer: =AlignInContainer.Stretch
+                  DropShadow: =DropShadow.Regular
+                  Fill: =gblTheme.Surface
+                  Height: =80
+                  RadiusBottomLeft: =8
+                  RadiusBottomRight: =8
+                  RadiusTopLeft: =8
+                  RadiusTopRight: =8
+                  Width: =Parent.Width
+                Children:
+                  - btnCancel:
+                      Control: Classic/Button@2.2.0
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        Color: =gblTheme.TextSecondary
+                        Fill: =gblTheme.Surface
+                        Font: =Font.'Segoe UI'
+                        Height: =50
+                        OnSelect: =Navigate(scrMenu, ScreenTransition.UnCoverRight)
+                        RadiusBottomLeft: =6
+                        RadiusBottomRight: =6
+                        RadiusTopLeft: =6
+                        RadiusTopRight: =6
+                        Size: =14 * gblDevice.FontScale
+                        Text: ="Cancel"
+                        Width: =150
+                        X: =20
+                        Y: =15
+                  - btnSaveReview:
+                      Control: Classic/Button@2.2.0
+                      Properties:
+                        BorderColor: =gblTheme.Success
+                        Color: =gblTheme.TextPrimary
+                        DisplayMode: |-
+                          =If(
+                              IsBlank(gblSelectedFacility),
+                              DisplayMode.Disabled,
+                              DisplayMode.Edit
+                          )
+                        Fill: =gblTheme.Success
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Bold
+                        Height: =50
+                        OnSelect: |-
+                          =// Save Desktop Review to SharePoint
+                          With(
+                              {
+                                  reviewRecord: Patch(
+                                      'ECR Desktop Reviews',
+                                      Defaults('ECR Desktop Reviews'),
+                                      {
+                                          Title: "Desktop Review - " & gblSelectedFacility.Title & " - " & Text(Today(), "mm/dd/yyyy"),
+                                          Facility_x0020_1: {
+                                              '@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedReference",
+                                              Id: gblSelectedFacility.ID,
+                                              Value: gblSelectedFacility.Title
+                                          },
+                                          AuditDate: Today(),
+                                          Auditor: {
+                                              '@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedReference",
+                                              Value: User().FullName
+                                          },
+                                          FacilityType: {
+                                              '@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedReference",
+                                              Value: gblSelectedFacility.'Facility Type'
+                                          },
+                                          OData__ExtendedDescription: Concatenate(
+                                              ForAll(
+                                                  colDesktopQuestions,
+                                                  ID & ": " & Question & " - " & Response & "<br>"
+                                              ).Value
+                                          ),
+                                          SendTo: gblSelectedFacility.CAResolution
+                                      }
+                                  )
+                              },
+                              If(
+                                  !IsBlank(reviewRecord),
+                                  Set(gblDesktopReviewData, reviewRecord);
+                                  Set(gblDesktopReviewCompleted, true);
+                                  Notify("Desktop Review saved successfully!", NotificationType.Success, 3000);
+                                  Navigate(scrMenu, ScreenTransition.UnCoverRight),
+                                  Notify("Error saving Desktop Review. Please try again.", NotificationType.Error, 3000)
+                              )
+                          )
+                        RadiusBottomLeft: =6
+                        RadiusBottomRight: =6
+                        RadiusTopLeft: =6
+                        RadiusTopRight: =6
+                        Size: =14 * gblDevice.FontScale
+                        Text: ="💾 Save Desktop Review"
+                        Width: =220
+                        X: =Parent.Width - 240
+                        Y: =15

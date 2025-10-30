@@ -1,0 +1,901 @@
+# ************************************************************************************************
+# Warning: YAML source code for Canvas Apps should only be used to review changes made within Power Apps Studio and for minor edits (Preview).
+# Use the maker portal to create and edit your Power Apps.
+# 
+# The schema file for Canvas Apps is available at https://go.microsoft.com/fwlink/?linkid=2304907
+# 
+# For more information, visit https://go.microsoft.com/fwlink/?linkid=2292623
+# ************************************************************************************************
+Screens:
+  scrSubmit:
+    Properties:
+      Fill: =gblTheme.Background
+      LoadingSpinnerColor: '=gblTheme.Accent '
+      OnVisible: |+
+        =// Calculate final score using correct formula
+              Set(varFinalScore, 
+                  Max(0, gblScoringWeights.BaseScore - (
+                      CountRows(Filter(colFindings, Severity = "Major")) * gblScoringWeights.Major +
+                      CountRows(Filter(colFindings, Severity = "Minor")) * gblScoringWeights.Minor +
+                      CountRows(Filter(colFindings, Severity = "Observation")) * gblScoringWeights.Observation
+                  ))
+              );
+              Set(varScoreInterpretation,
+                  Switch(
+                      true,
+                      varFinalScore >= 90, "Excellent - Minimal compliance issues",
+                      varFinalScore >= 75, "Good - Minor issues to address",
+                      varFinalScore >= 60, "Fair - Several compliance issues",
+                      "Poor - Significant compliance concerns"
+                  )
+              );
+              UpdateContext({
+                  locFacilityRepRequired: true,
+                  locValidationErrors: ""
+              });
+    Children:
+      - hedSubmitHeader:
+          Control: Header@0.0.44
+          Properties:
+            BorderColor: =gblTheme.Border
+            BorderStyle: =BorderStyle.Solid
+            BorderThickness: =1
+            Fill: =gblTheme.Surface
+            FontColor: =gblTheme.PrimaryDark
+            Height: =90
+            Title: ="Review & Submit Audit"
+            TitleFontSize: =20 * gblDevice.FontScale
+      - svMainSubmit:
+          Control: Gallery@2.15.0
+          Variant: BrowseLayout_Vertical_TwoTextOneImageVariant_ver5.0
+          Properties:
+            BorderColor: =RGBA(245, 245, 245, 1)
+            Height: =Parent.Height - 190
+            Items: =[1]
+            TemplateSize: =If(CountRows(colFindings) > 0, 2000, 1400)
+            Width: =Parent.Width
+            Y: =90
+          Children:
+            - conSubmitContent:
+                Control: GroupContainer@1.3.0
+                Variant: ManualLayout
+                Properties:
+                  Height: =Parent.TemplateHeight
+                  Width: =Min(1000, Parent.Width - 40)
+                  X: =(Parent.Width - Self.Width) / 2
+                Children:
+                  - conScoreSummary:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        BorderThickness: =1
+                        Fill: =gblTheme.Surface
+                        Height: =280
+                        RadiusBottomLeft: =12
+                        RadiusBottomRight: =12
+                        RadiusTopLeft: =12
+                        RadiusTopRight: =12
+                        Width: =Parent.Width
+                        Y: =20
+                      Children:
+                        - lblScoreValue:
+                            Control: Label@2.5.1
+                            Properties:
+                              Align: =Align.Center
+                              Color: |-
+                                =Switch(
+                                                                  true,
+                                                                  varFinalScore >= 85, gblTheme.Success,
+                                                                  varFinalScore >= 70, gblTheme.Warning,
+                                                                  gblTheme.Error
+                                                              )
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Bold
+                              Height: =80
+                              Size: =60 * gblDevice.FontScale
+                              Text: |-
+                                =varFinalScore & "/100" & Char(10) & 
+                                    "(" & CountRows(colFindings) & " findings: " & 
+                                    CountRows(Filter(colFindings, Severity = "Major")) & " major, " &
+                                    CountRows(Filter(colFindings, Severity = "Minor")) & " minor)"
+                              Width: =Parent.Width
+                              Y: =50
+                        - htmlGauge:
+                            Control: HtmlViewer@2.1.0
+                            Properties:
+                              Height: =100
+                              HtmlText: |-
+                                =With(
+                                    {
+                                        score: Max(0, Min(100, varFinalScore)),
+                                        gaugeColor: Switch(
+                                            true,
+                                            varFinalScore >= 85, "#107C10",
+                                            varFinalScore >= 70, "#FF8C00",
+                                            "#D13438"
+                                        )
+                                    },
+                                    "<div style='width:100%;text-align:center;'>
+                                    <svg width='300' height='80' viewBox='0 0 300 80'>
+                                    <defs>
+                                        <linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='0%'>
+                                        <stop offset='0%' style='stop-color:#D13438;stop-opacity:1' />
+                                        <stop offset='50%' style='stop-color:#FF8C00;stop-opacity:1' />
+                                        <stop offset='100%' style='stop-color:#107C10;stop-opacity:1' />
+                                        </linearGradient>
+                                    </defs>
+                                    <rect x='10' y='30' width='280' height='20' rx='10' fill='#f0f0f0'/>
+                                    <rect x='10' y='30' width='" & Text(score * 2.8) & "' height='20' rx='10' fill='" & gaugeColor & "'/>
+                                    <circle cx='" & Text(10 + score * 2.8) & "' cy='40' r='15' fill='" & gaugeColor & "'/>
+                                    <text x='" & Text(10 + score * 2.8) & "' y='45' text-anchor='middle' fill='white' font-weight='bold'>" & Text(score) & "</text>
+                                    </svg>
+                                    </div>"
+                                )
+                              Width: =Parent.Width
+                              Y: =130
+                        - lblScoreInterpretation:
+                            Control: Label@2.5.1
+                            Properties:
+                              Align: =Align.Center
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Semibold
+                              Height: =30
+                              Size: =14 * gblDevice.FontScale
+                              Text: =varScoreInterpretation
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =230
+                        - lblScoreTitle:
+                            Control: Label@2.5.1
+                            Properties:
+                              Align: =Align.Center
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Bold
+                              Height: =30
+                              Size: =18 * gblDevice.FontScale
+                              Text: ="AUDIT SCORE"
+                              Width: =Parent.Width
+                              Y: =20
+                  - lblNoFindings_2:
+                      Control: Label@2.5.1
+                      Properties:
+                        Align: =Align.Center
+                        Color: =gblTheme.Success
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Semibold
+                        Height: =50
+                        Size: =18 * gblDevice.FontScale
+                        Text: ="✅ No compliance issues identified"
+                        Visible: =CountRows(colFindings) = 0
+                        Width: =638
+                        X: =45
+                        Y: =181
+                  - conFindingsSummary:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        BorderThickness: =1
+                        Fill: =gblTheme.Surface
+                        Height: =If(CountRows(colFindings) > 0, 600, 150)
+                        RadiusBottomLeft: =12
+                        RadiusBottomRight: =12
+                        RadiusTopLeft: =12
+                        RadiusTopRight: =12
+                        Width: =Parent.Width
+                        Y: =320
+                      Children:
+                        - lblFindingsTitle_1:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Bold
+                              Height: =30
+                              Size: =18 * gblDevice.FontScale
+                              Text: |-
+                                ="📋 FINDINGS SUMMARY"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =20
+                        - conFindingStats:
+                            Control: GroupContainer@1.3.0
+                            Variant: ManualLayout
+                            Properties:
+                              Height: =80
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =60
+                            Children:
+                              - galFindingStats:
+                                  Control: Gallery@2.15.0
+                                  Variant: BrowseLayout_Horizontal_TwoTextOneImageVariant_ver5.0
+                                  Properties:
+                                    BorderColor: =RGBA(245, 245, 245, 1)
+                                    Height: =80
+                                    Items: |
+                                      = Table(
+                                              {
+                                                  Severity: "Major",
+                                                  Count: CountRows(Filter(colFindings, Severity = "Major")),
+                                                  Color: gblTheme.Error,
+                                                  Icon: "⚠️"
+                                              },
+                                              {
+                                                  Severity: "Minor",
+                                                  Count: CountRows(Filter(colFindings, Severity = "Minor")),
+                                                  Color: gblTheme.Warning,
+                                                  Icon: "🔶"
+                                              },
+                                              {
+                                                  Severity: "Observation",
+                                                  Count: CountRows(Filter(colFindings, Severity = "Observation")),
+                                                  Color: gblTheme.TextTertiary,
+                                                  Icon: "ℹ️"
+                                              }
+                                          )
+                                    ShowScrollbar: =false
+                                    TemplateSize: =Parent.Width / 4
+                                    Width: =Parent.Width
+                                  Children:
+                                    - recStatBg:
+                                        Control: Rectangle@2.3.0
+                                        Properties:
+                                          BorderColor: =ThisItem.Color
+                                          BorderThickness: =1
+                                          Fill: =ColorFade(ThisItem.Color, 90%)
+                                          Height: =Parent.TemplateHeight - 10
+                                          Width: =Parent.TemplateWidth - 10
+                                          X: =5
+                                          Y: =5
+                                    - lblStatCount:
+                                        Control: Label@2.5.1
+                                        Properties:
+                                          Align: =Align.Center
+                                          Color: =ThisItem.Color
+                                          Font: =Font.'Segoe UI'
+                                          FontWeight: =FontWeight.Bold
+                                          Size: =24 * gblDevice.FontScale
+                                          Text: =ThisItem.Icon & " " & ThisItem.Count
+                                          Width: =Parent.TemplateWidth
+                                          Y: =10
+                                    - lblStatSeverity:
+                                        Control: Label@2.5.1
+                                        Properties:
+                                          Align: =Align.Center
+                                          Color: =gblTheme.TextSecondary
+                                          Font: =Font.'Segoe UI'
+                                          Height: =20
+                                          Size: =12 * gblDevice.FontScale
+                                          Text: =ThisItem.Severity
+                                          Width: =Parent.TemplateWidth
+                                          Y: =50
+                        - galDetailedFindings:
+                            Control: Gallery@2.15.0
+                            Variant: BrowseLayout_Vertical_OneTextVariant_ver5.0
+                            Properties:
+                              BorderColor: =RGBA(245, 245, 245, 1)
+                              BorderThickness: =1
+                              Height: =80
+                              Items: =Sort(colFindings, Category, SortOrder.Ascending)
+                              TemplatePadding: =5
+                              Visible: =CountRows(colFindings) > 0
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =160
+                            Children:
+                              - recFindingDetailBg:
+                                  Control: Rectangle@2.3.0
+                                  Properties:
+                                    BorderColor: =gblTheme.BorderLight
+                                    BorderStyle: =BorderStyle.None
+                                    BorderThickness: =1
+                                    DisabledFill: =RGBA(161, 159, 157, 1)
+                                    Fill: =If(ThisItem.Category <> First(Sort(Filter(colFindings, Category = ThisItem.Category), Timestamp)).Category, RGBA(0,0,0,0), gblTheme.Surface)
+                                    FocusedBorderThickness: =4
+                                    Height: =Parent.TemplateHeight - 4
+                                    HoverFill: =RGBA(0, 120, 212, 1)
+                                    OnSelect: =Select(Parent)
+                                    PressedFill: =RGBA(0, 120, 212, 1)
+                                    Width: =678
+                                    Y: =2
+                              - lblCategoryHeader:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    BorderColor: =RGBA(0, 0, 0, 0)
+                                    BorderStyle: =BorderStyle.None
+                                    BorderThickness: =2
+                                    Color: =gblTheme.TextSecondary
+                                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                                    DisabledColor: =RGBA(161, 159, 157, 1)
+                                    FocusedBorderThickness: =4
+                                    Font: =Font.'Segoe UI'
+                                    FontWeight: =FontWeight.Bold
+                                    Height: =25
+                                    OnSelect: =Select(Parent)
+                                    Size: =14 * gblDevice.FontScale
+                                    Text: |-
+                                      =If(
+                                          ThisItem.FindingID = First(Sort(Filter(colFindings, Category = ThisItem.Category), Timestamp)).FindingID,
+                                          ThisItem.Category & " (" & CountRows(Filter(colFindings, Category = ThisItem.Category)) & ")",
+                                          ""
+                                        )
+                                    Visible: =ThisItem.FindingID = First(Sort(Filter(colFindings, Category = ThisItem.Category), Timestamp)).FindingID
+                                    Width: =Parent.Width - 40
+                                    X: =20
+                                    Y: =10
+                              - lblFindingDetail:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    BorderColor: =RGBA(0, 0, 0, 0)
+                                    BorderStyle: =BorderStyle.None
+                                    BorderThickness: =2
+                                    Color: |-
+                                      =Switch(
+                                                  ThisItem.Severity,
+                                                  "Major", gblTheme.Error,
+                                                  "Minor", gblTheme.Warning,
+                                                  gblTheme.TextTertiary  // Observation
+                                              )
+                                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                                    DisabledColor: =RGBA(161, 159, 157, 1)
+                                    FocusedBorderThickness: =4
+                                    Font: =Font.'Segoe UI'
+                                    Height: =25
+                                    OnSelect: =Select(Parent)
+                                    Size: =12 * gblDevice.FontScale
+                                    Text: ="• " & ThisItem.Issue
+                                    Width: =Parent.Width - 60
+                                    X: =40
+                                    Y: |-
+                                      =If(
+                                          ThisItem.FindingID = First(Sort(Filter(colFindings, Category = ThisItem.Category), Timestamp)).FindingID,
+                                          40,
+                                          15
+                                        )
+                  - conFacilityInfo:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        BorderThickness: =1
+                        Fill: =gblTheme.Surface
+                        RadiusBottomLeft: =12
+                        RadiusBottomRight: =12
+                        RadiusTopLeft: =12
+                        RadiusTopRight: =12
+                        Width: =Parent.Width
+                        Y: =If(CountRows(colFindings) > 0, 940, 490)
+                      Children:
+                        - lblFacilityTitle_1:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Bold
+                              Height: =30
+                              Size: =18 * gblDevice.FontScale
+                              Text: |-
+                                ="🏢 AUDIT DETAILS"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =20
+                        - conFacilityDetails:
+                            Control: GroupContainer@1.3.0
+                            Variant: ManualLayout
+                            Properties:
+                              Height: =120
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =60
+                            Children:
+                              - lblFacilityName:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    Color: =gblTheme.TextSecondary
+                                    Font: =Font.'Segoe UI'
+                                    Height: =25
+                                    Size: =14 * gblDevice.FontScale
+                                    Text: |-
+                                      ="Facility: " & gblSelectedFacility.Title
+                                    Width: =Parent.Width / 2 - 10
+                              - lblAuditType:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    Color: =gblTheme.TextSecondary
+                                    Font: =Font.'Segoe UI'
+                                    Height: =25
+                                    Size: =14 * gblDevice.FontScale
+                                    Text: |-
+                                      ="Audit Type: " & gblAuditType
+                                    Width: =Parent.Width / 2 - 10
+                                    X: =Parent.Width / 2 + 10
+                              - lblAuditDate:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    Color: =gblTheme.TextSecondary
+                                    Font: =Font.'Segoe UI'
+                                    Height: =25
+                                    Size: =14 * gblDevice.FontScale
+                                    Text: |-
+                                      ="Date: " & Text(Now(), "mmmm dd, yyyy")
+                                    Width: =Parent.Width / 2 - 10
+                                    Y: =30
+                              - lblAuditor:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    Color: =gblTheme.TextSecondary
+                                    Font: =Font.'Segoe UI'
+                                    Height: =25
+                                    Size: =14 * gblDevice.FontScale
+                                    Text: |-
+                                      ="Auditor: " & User().FullName
+                                    Width: =Parent.Width / 2 - 10
+                                    X: =Parent.Width / 2 + 10
+                                    Y: =30
+                              - lblWeather:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    Color: =gblTheme.TextSecondary
+                                    Font: =Font.'Segoe UI'
+                                    Height: =25
+                                    Size: =14 * gblDevice.FontScale
+                                    Text: |-
+                                      ="Weather: " & If(IsBlank(gblWeatherConditions), "Not recorded", gblWeatherConditions)
+                                    Width: =Parent.Width / 2 - 10
+                                    Y: =60
+                              - lblLocation:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    Color: =gblTheme.TextSecondary
+                                    Font: =Font.'Segoe UI'
+                                    Height: =25
+                                    Size: =14 * gblDevice.FontScale
+                                    Text: |-
+                                      =If(
+                                                                              gblCurrentLocation.Latitude <> 0,
+                                                                              "GPS: " & Round(gblCurrentLocation.Latitude, 6) & ", " & Round(gblCurrentLocation.Longitude, 6),
+                                                                              "GPS: Not recorded"
+                                                                          )
+                                    Width: =Parent.Width / 2 - 10
+                                    X: =Parent.Width / 2 + 10
+                                    Y: =60
+                  - conReviewConfirmation:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        BorderThickness: =1
+                        Fill: =gblTheme.Surface
+                        Height: =100
+                        RadiusBottomLeft: =12
+                        RadiusBottomRight: =12
+                        RadiusTopLeft: =12
+                        RadiusTopRight: =12
+                        Width: =Parent.Width
+                        Y: =If(CountRows(colFindings) > 0, 1160, 710)
+                      Children:
+                        - chkReviewConfirm:
+                            Control: Classic/CheckBox@2.1.0
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              CheckmarkFill: =gblTheme.Success
+                              Height: =60
+                              OnCheck: |-
+                                =UpdateContext({locReviewConfirmed: true, locShowSignatures: true});
+                                Patch(gblValidation, gblValidation, {SignatureValid: true})
+                              OnUncheck: |-
+                                =UpdateContext({locReviewConfirmed: false, locShowSignatures: false});
+                                Patch(gblValidation, gblValidation, {SignatureValid: false})
+                              Size: =14 * gblDevice.FontScale
+                              Text: ="I have reviewed all findings and confirm the accuracy of this audit report"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =20
+                  - conFacilityAcknowledgment:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        BorderThickness: =1
+                        DropShadow: =DropShadow.Regular
+                        Fill: =gblTheme.Surface
+                        Height: =480
+                        RadiusBottomLeft: =12
+                        RadiusBottomRight: =12
+                        RadiusTopLeft: =12
+                        RadiusTopRight: =12
+                        Width: =Parent.Width
+                        Y: =1420
+                      Children:
+                        - lblAcknowledgmentTitle:
+                            Control: Label@2.5.1
+                            Properties:
+                              BorderColor: =RGBA(0, 0, 0, 0)
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Bold
+                              Height: =35
+                              Size: =20 * gblDevice.FontScale
+                              Text: ="✍️ Facility Acknowledgment"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =20
+                        - lblAcknowledgmentDesc:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextTertiary
+                              Font: =Font.'Segoe UI'
+                              Size: =13 * gblDevice.FontScale
+                              Text: ="A facility representative must acknowledge this audit report. This information will be included in the final report."
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =60
+                        - recSeparator1:
+                            Control: Rectangle@2.3.0
+                            Properties:
+                              BorderColor: =RGBA(0, 0, 0, 0)
+                              Fill: =gblTheme.BorderLight
+                              Height: =1
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =105
+                        - lblFacilityRepName:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Semibold
+                              Height: =25
+                              Size: =14 * gblDevice.FontScale
+                              Text: ="Representative Name *"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =120
+                        - txtFacilityRepName:
+                            Control: Classic/TextInput@2.3.2
+                            Properties:
+                              BorderColor: =If(IsBlank(Self.Text), gblTheme.Error, gblTheme.Border)
+                              BorderThickness: =If(IsBlank(Self.Text), 2, 1)
+                              Color: =gblTheme.TextSecondary
+                              Fill: =gblTheme.Surface
+                              Font: =Font.'Segoe UI'
+                              Height: =50
+                              HintText: ="Enter facility representative's full name"
+                              HoverBorderColor: =gblTheme.Primary
+                              Size: =14 * gblDevice.FontScale
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =150
+                        - lblFacilityEmail:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Semibold
+                              Height: =25
+                              Size: =14 * gblDevice.FontScale
+                              Text: ="Email Address *"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =215
+                        - txtFacilityEmail:
+                            Control: Classic/TextInput@2.3.2
+                            Properties:
+                              BorderColor: |-
+                                =If(
+                                    IsBlank(Self.Text), 
+                                    gblTheme.Error, 
+                                    If(IsMatch(Self.Text, Match.Email), gblTheme.Border, gblTheme.Error)
+                                )
+                              BorderThickness: |-
+                                =If(
+                                    IsBlank(Self.Text) || !IsMatch(Self.Text, Match.Email), 
+                                    2, 
+                                    1
+                                )
+                              Color: =gblTheme.TextSecondary
+                              Fill: =gblTheme.Surface
+                              Font: =Font.'Segoe UI'
+                              Height: =50
+                              HintText: ="facility.representative@example.com"
+                              HoverBorderColor: =gblTheme.Primary
+                              Size: =14 * gblDevice.FontScale
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =245
+                        - lblEmailValidation:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.Error
+                              Font: =Font.'Segoe UI'
+                              Height: =20
+                              Size: =12 * gblDevice.FontScale
+                              Text: |-
+                                =If(
+                                    !IsBlank(txtFacilityEmail.Text) && !IsMatch(txtFacilityEmail.Text, Match.Email),
+                                    "⚠️ Please enter a valid email address",
+                                    ""
+                                )
+                              Visible: =!IsBlank(Self.Text)
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =300
+                        - lblFacilityComments:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Semibold
+                              Height: =25
+                              Size: =14 * gblDevice.FontScale
+                              Text: ="Facility Comments/Response (Optional)"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =330
+                        - txtFacilityComments:
+                            Control: Classic/TextInput@2.3.2
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              BorderThickness: =1
+                              Color: =gblTheme.TextSecondary
+                              Fill: =gblTheme.Surface
+                              Font: =Font.'Segoe UI'
+                              Height: =100
+                              HintText: ="Facility representative's comments, planned corrective actions, or response to findings..."
+                              HoverBorderColor: =gblTheme.Primary
+                              Mode: =TextMode.MultiLine
+                              PaddingBottom: =8
+                              PaddingLeft: =8
+                              PaddingRight: =8
+                              PaddingTop: =8
+                              Size: =14 * gblDevice.FontScale
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =360
+            - conSignatures:
+                Control: GroupContainer@1.3.0
+                Variant: ManualLayout
+                Properties:
+                  BorderColor: =gblTheme.Border
+                  BorderThickness: =1
+                  Fill: =gblTheme.Surface
+                  Height: =300
+                  RadiusBottomLeft: =12
+                  RadiusBottomRight: =12
+                  RadiusTopLeft: =12
+                  RadiusTopRight: =12
+                  Visible: =locShowSignatures
+                  Width: =Parent.Width
+                  Y: =If(CountRows(colFindings) > 0, 1280, 830)
+                Children:
+                  - lblSignaturesTitle:
+                      Control: Label@2.5.1
+                      Properties:
+                        Color: =gblTheme.TextSecondary
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Bold
+                        Height: =30
+                        Size: =18 * gblDevice.FontScale
+                        Text: ="✍️ SIGNATURES"
+                        Width: =Parent.Width - 40
+                        X: =20
+                        Y: =20
+                  - conSignatureBoxes:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        Height: =230
+                        Width: =Parent.Width - 40
+                        X: =20
+                        Y: =60
+                      Children:
+                        - conReviewerSig:
+                            Control: GroupContainer@1.3.0
+                            Variant: ManualLayout
+                            Properties:
+                              Width: =Parent.Width / 2 - 10
+                            Children:
+                              - lblReviewerSigTitle:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    Color: =gblTheme.TextSecondary
+                                    Font: =Font.'Segoe UI'
+                                    FontWeight: =FontWeight.Semibold
+                                    Height: =25
+                                    Size: =14 * gblDevice.FontScale
+                                    Text: ="Reviewer Signature"
+                                    Width: =Parent.Width
+                              - sigReviewer:
+                                  Control: PenInput@2.3.0
+                                  Properties:
+                                    BorderColor: =gblTheme.Border
+                                    Fill: =gblTheme.Surface
+                                    Height: =150
+                                    Width: =Parent.Width
+                                    Y: =30
+                              - btnClearReviewer:
+                                  Control: Classic/Button@2.2.0
+                                  Properties:
+                                    BorderColor: =gblTheme.Border
+                                    Color: =gblTheme.TextSecondary
+                                    Fill: =gblTheme.Surface
+                                    Font: =Font.'Segoe UI'
+                                    OnSelect: =Reset(sigReviewer)
+                                    RadiusBottomLeft: =4
+                                    RadiusBottomRight: =4
+                                    RadiusTopLeft: =4
+                                    RadiusTopRight: =4
+                                    Size: =12 * gblDevice.FontScale
+                                    Text: ="Clear"
+                                    Width: =80
+                                    X: =Parent.Width - 80
+                                    Y: =160
+                        - conManagerSig:
+                            Control: GroupContainer@1.3.0
+                            Variant: ManualLayout
+                            Properties:
+                              Width: =Parent.Width / 2 - 10
+                              X: =Parent.Width / 2 + 10
+                            Children:
+                              - lblManagerSigTitle:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    Color: =gblTheme.TextSecondary
+                                    Font: =Font.'Segoe UI'
+                                    FontWeight: =FontWeight.Semibold
+                                    Height: =25
+                                    Size: =14 * gblDevice.FontScale
+                                    Text: ="Manager Signature (Optional)"
+                                    Width: =Parent.Width
+                              - sigManager:
+                                  Control: PenInput@2.3.0
+                                  Properties:
+                                    BorderColor: =gblTheme.Border
+                                    Fill: =gblTheme.Surface
+                                    Height: =150
+                                    Width: =Parent.Width
+                                    Y: =30
+                              - btnClearManager:
+                                  Control: Classic/Button@2.2.0
+                                  Properties:
+                                    BorderColor: =gblTheme.Border
+                                    Color: =gblTheme.TextSecondary
+                                    Fill: =gblTheme.Surface
+                                    Font: =Font.'Segoe UI'
+                                    OnSelect: =Reset(sigManager)
+                                    RadiusBottomLeft: =4
+                                    RadiusBottomRight: =4
+                                    RadiusTopLeft: =4
+                                    RadiusTopRight: =4
+                                    Size: =12 * gblDevice.FontScale
+                                    Text: ="Clear"
+                                    Width: =80
+                                    X: =Parent.Width - 80
+                                    Y: =160
+      - conBottomNav:
+          Control: GroupContainer@1.3.0
+          Variant: ManualLayout
+          Properties:
+            BorderColor: =gblTheme.Border
+            BorderThickness: =1
+            Fill: =gblTheme.Surface
+            Height: =100
+            Width: =Parent.Width
+            Y: =Parent.Height - 100
+          Children:
+            - btnBack:
+                Control: Classic/Button@2.2.0
+                Properties:
+                  BorderColor: =gblTheme.Border
+                  BorderThickness: =1
+                  Color: =gblTheme.TextSecondary
+                  Fill: =gblTheme.Surface
+                  Font: =Font.'Segoe UI'
+                  FontWeight: =FontWeight.Bold
+                  Height: =70
+                  HoverFill: =gblTheme.SurfaceHover
+                  OnSelect: =Navigate(scrAudit, ScreenTransition.Fade)
+                  RadiusBottomLeft: =8
+                  RadiusBottomRight: =8
+                  RadiusTopLeft: =8
+                  RadiusTopRight: =8
+                  Size: =16 * gblDevice.FontScale
+                  Text: ="← Back to Audit"
+                  Width: =150
+                  X: =20
+                  Y: =15
+            - lblSubmitStatus:
+                Control: Label@2.5.1
+                Properties:
+                  Align: =Align.Center
+                  Color: |+
+                    =If(
+                                          And(locReviewConfirmed, !IsBlank(sigReviewer.Image)),
+                                          gblTheme.Success,
+                                          gblTheme.TextTertiary
+                                      )
+                  FontWeight: =FontWeight.Semibold
+                  Height: =30
+                  Size: =14 * gblDevice.FontScale
+                  Text: |-
+                    =If(
+                                          !locReviewConfirmed,
+                                          "Please review and confirm",
+                                          If(
+                                              IsBlank(sigReviewer.Image),
+                                              "Reviewer signature required",
+                                              "Ready to submit"
+                                          )
+                                      )
+                  Width: =400
+                  X: =(Parent.Width - Self.Width) / 2
+                  Y: =35
+            - btnSubmit:
+                Control: Button@0.0.45
+                Properties:
+                  BasePaletteColor: =gblTheme.Success
+                  BorderRadiusBottomLeft: =8
+                  BorderRadiusBottomRight: =8
+                  BorderRadiusTopLeft: =8
+                  BorderRadiusTopRight: =8
+                  DisplayMode: |-
+                    =If(
+                                                  !IsBlank(txtFacilityRepName.Text) && 
+                                                  !IsBlank(txtFacilityEmail.Text) &&
+                                                  IsMatch(txtFacilityEmail.Text, Match.Email) &&
+                                                  !gblIsSubmitting,
+                                                  DisplayMode.Edit,
+                                                  DisplayMode.Disabled
+                                              )
+                  FontSize: =16 * gblDevice.FontScale
+                  Height: =60
+                  OnSelect: "=// ===== START SUBMISSION PROCESS =====\r\n                          Set(gblIsSubmitting, true);\r\n                          Set(varSubmitError, false);\r\n                          Set(varErrorMessage, \"\");\r\n                          \r\n                          // Validate required fields one more time\r\n                          If(\r\n                              IsBlank(txtFacilityRepName.Text) || IsBlank(txtFacilityEmail.Text),\r\n                              \r\n                              // VALIDATION FAILED\r\n                              Set(varSubmitError, true);\r\n                              Set(varErrorMessage, \"Facility representative name and email are required.\");\r\n                              Set(gblIsSubmitting, false);\r\n                              Notify(varErrorMessage, NotificationType.Error),\r\n                              \r\n                              // VALIDATION PASSED - PROCEED WITH SUBMISSION\r\n                              \r\n                              // Save facility acknowledgment\r\n                              Set(gblFacilityAcknowledgment, {\r\n                                  RepName: txtFacilityRepName.Text,\r\n                                  RepEmail: txtFacilityEmail.Text,\r\n                                  Comments: txtFacilityComments.Text,\r\n                                  SignedDate: Now(),\r\n                                  IsAcknowledged: true\r\n                              });\r\n                              \r\n                              // 1. CREATE MAIN AUDIT RECORD\r\n                              Set(varNewAuditID,\r\n                                  Patch(\r\n                                      'Audit Reports',\r\n                                      Defaults('Audit Reports'),\r\n                                      {\r\n                                          Title: gblSelectedFacility.Title & \" - ECR - \" & Text(Now(), \"[$-en-US]mmm dd, yyyy\"),\r\n                                          'Facility Title': gblSelectedFacility.Title,\r\n                                          FacilityID: gblSelectedFacility.ID,\r\n                                          'Audit Type': gblAuditType,\r\n                                          'Audit Date': Today(),\r\n                                          'Auditor Name': User().FullName,\r\n                                          'Auditor Email': User().Email,\r\n                                          'Weather Conditions': gblWeatherConditions,\r\n                                          'General Observations': gblGeneralObservations,\r\n                                          'Water System Notes': gblWaterSystemNotes,\r\n                                          'Air System Notes': gblAirSystemNotes,\r\n                                          'Storage Notes': gblStorageNotes,\r\n                                          'Odor Notes': gblOdorNotes,\r\n                                          'Final Score': varFinalScore,\r\n                                          'Score Interpretation': varScoreInterpretation,\r\n                                          'Major Findings': CountRows(Filter(colFindings, Severity = \"Major\")),\r\n                                          'Minor Findings': CountRows(Filter(colFindings, Severity = \"Minor\")),\r\n                                          Observations: CountRows(Filter(colFindings, Severity = \"Observation\")),\r\n                                          'Facility Rep Name': gblFacilityAcknowledgment.RepName,\r\n                                          'Facility Rep Email': gblFacilityAcknowledgment.RepEmail,\r\n                                          'Facility Comments': gblFacilityAcknowledgment.Comments,\r\n                                          Status: \"Complete\",\r\n                                          'GPS Latitude': gblCurrentLocation.Latitude,\r\n                                          'GPS Longitude': gblCurrentLocation.Longitude,\r\n                                          'Submitted Date': Now()\r\n                                      }\r\n                                  )\r\n                              );\r\n                              \r\n                              // 2. CHECK IF MAIN RECORD CREATED SUCCESSFULLY\r\n                              If(\r\n                                  IsError(varNewAuditID) || IsBlank(varNewAuditID) || IsBlank(varNewAuditID.ID),\r\n                                  \r\n                                  // === ERROR - MAIN RECORD FAILED ===\r\n                                  Set(gblIsSubmitting, false);\r\n                                  Set(varSubmitError, true);\r\n                                  Set(varErrorMessage, \"Failed to create audit record. Please check your connection and try again.\");\r\n                                  Notify(varErrorMessage, NotificationType.Error),\r\n                                  \r\n                                  // === SUCCESS - MAIN RECORD CREATED ===\r\n                                  // Continue with child records\r\n                                  \r\n                                  // 3. SUBMIT ALL FINDINGS TO ECR CORRECTIVE ACTIONS LIST\r\n                                  ForAll(\r\n                                      colFindings,\r\n                                      Patch(\r\n                                          'ECR Corrective Actions',\r\n                                          Defaults('ECR Corrective Actions'),\r\n                                          {\r\n                                              Title: Issue,\r\n                                              'Audit Report ID': varNewAuditID.ID,\r\n                                              'Facility L': {Value: gblSelectedFacility.Title},\r\n                                              'Finding Category (Main Choice)': {Value: Category},\r\n                                              'Severity of Finding': {Value: Severity},\r\n                                              'Major Finding Type': {Value: MajorType},\r\n                                              'Date of Finding': Today(),\r\n                                              'Finding Description': DetailedDescription,\r\n                                              'Finding Location': Location,\r\n                                              'Requirement/Regulation Violated': RequirementViolated,\r\n                                              'Recommended Corrective Action': CorrectiveAction,\r\n                                              'Responsible Party': ResponsibleParty,\r\n                                              'Corrective Action Deadline': DueDate,\r\n                                              'CA Status': {Value: If(FixedOnSite, \"Resolved\", \"Unresolved\")},\r\n                                              'Fixed On-Site': FixedOnSite,\r\n                                              'Resolution Details': FixedDescription,\r\n                                              'Follow-Up Inspection Required': FollowUpRequired,\r\n                                              'Auditor Notes': AuditorNotes,\r\n                                              'Facility Response': FacilityResponse\r\n                                          }\r\n                                      )\r\n                                  );\r\n                                  \r\n                                  // 4. GENERATE HTML REPORT\r\n                                  Set(gblReportHTML, \r\n                                      \"<!DOCTYPE html><html><head><style>body{font-family:'Segoe UI',Arial,sans-serif;margin:40px;line-height:1.6}.header{text-align:center;border-bottom:3px solid #0033A0;padding-bottom:20px;margin-bottom:30px}.header h1{color:#0033A0;margin:10px 0}.section{margin:30px 0;page-break-inside:avoid}.section-title{background-color:#0033A0;color:white;padding:12px;font-size:18px;font-weight:bold;margin-bottom:15px}.score{font-size:48px;font-weight:bold;text-align:center;margin:20px 0}.score.excellent{color:#107C10}.score.good{color:#FF8C00}.score.poor{color:#D13438}.finding{border-left:4px solid;padding:15px;margin:15px 0;background-color:#f9f9f9}.finding.major{border-color:#D13438}.finding.minor{border-color:#FF8C00}.finding-header{font-weight:bold;font-size:16px;margin-bottom:10px}table{width:100%;border-collapse:collapse;margin:15px 0}td,th{border:1px solid #ddd;padding:10px;text-align:left}th{background-color:#f2f2f2}.footer{margin-top:40px;padding-top:20px;border-top:2px solid #0033A0;text-align:center;font-size:10px;color:#666}</style></head><body><div class='header'><h1>Environmental Compliance Review</h1><h2>\" & \r\n                                      gblSelectedFacility.Title & \r\n                                      \"</h2><p><strong>Audit Date:</strong> \" & \r\n                                      Text(Today(), \"[$-en-US]mmmm dd, yyyy\") & \r\n                                      \"</p><p><strong>Auditor:</strong> \" & \r\n                                      User().FullName & \r\n                                      \"</p><p><strong>Weather:</strong> \" & \r\n                                      gblWeatherConditions & \r\n                                      \"</p></div><div class='section'><div class='section-title'>AUDIT SCORE</div><div class='score \" & \r\n                                      If(varFinalScore >= 90, \"excellent\", If(varFinalScore >= 75, \"good\", \"poor\")) & \r\n                                      \"'>\" & varFinalScore & \" / 100</div><p style='text-align:center;font-style:italic'>\" & \r\n                                      varScoreInterpretation & \r\n                                      \"</p></div><div class='section'><div class='section-title'>GENERAL SITE OBSERVATIONS</div><p>\" & \r\n                                      gblGeneralObservations & \r\n                                      \"</p></div><div class='section'><div class='section-title'>FINDINGS SUMMARY</div><table><tr><th>Severity</th><th>Count</th></tr><tr><td>Major Findings</td><td>\" & \r\n                                      CountRows(Filter(colFindings, Severity = \"Major\")) & \r\n                                      \"</td></tr><tr><td>Minor Findings</td><td>\" & \r\n                                      CountRows(Filter(colFindings, Severity = \"Minor\")) & \r\n                                      \"</td></tr><tr><td>Observations</td><td>\" & \r\n                                      CountRows(Filter(colFindings, Severity = \"Observation\")) & \r\n                                      \"</td></tr></table></div><div class='section'><div class='section-title'>DETAILED FINDINGS</div>\" & \r\n                                      If(CountRows(Filter(colFindings, Severity = \"Major\")) > 0,\r\n                                          \"<h3 style='color:#D13438'>Major Findings</h3>\" & \r\n                                          Concat(Filter(colFindings, Severity = \"Major\"),\r\n                                              \"<div class='finding major'><div class='finding-header'>\" & \r\n                                              Issue & \r\n                                              \"</div><p><strong>Category:</strong> \" & \r\n                                              Category & \r\n                                              \"</p><p><strong>Location:</strong> \" & \r\n                                              Location & \r\n                                              \"</p><p><strong>Description:</strong> \" & \r\n                                              DetailedDescription & \r\n                                              \"</p><p><strong>Corrective Action:</strong> \" & \r\n                                              CorrectiveAction & \r\n                                              \"</p></div>\", \"\"\r\n                                          ), \"\"\r\n                                      ) & \r\n                                      If(CountRows(Filter(colFindings, Severity = \"Minor\")) > 0,\r\n                                          \"<h3 style='color:#FF8C00'>Minor Findings</h3>\" & \r\n                                          Concat(Filter(colFindings, Severity = \"Minor\"),\r\n                                              \"<div class='finding minor'><div class='finding-header'>\" & \r\n                                              Issue & \r\n                                              \"</div><p><strong>Corrective Action:</strong> \" & \r\n                                              CorrectiveAction & \r\n                                              \"</p></div>\", \"\"\r\n                                          ), \"\"\r\n                                      ) & \r\n                                      \"</div><div class='section'><div class='section-title'>FACILITY ACKNOWLEDGMENT</div><p><strong>Representative:</strong> \" & \r\n                                      txtFacilityRepName.Text & \r\n                                      \"</p><p><strong>Email:</strong> \" & \r\n                                      txtFacilityEmail.Text & \r\n                                      \"</p><p><strong>Comments:</strong> \" & \r\n                                      txtFacilityComments.Text & \r\n                                      \"</p></div><div class='footer'><p><strong>Choctaw Nation of Oklahoma</strong></p><p>Environmental Protection Services</p><p>Report Generated: \" & \r\n                                      Text(Now(), \"[$-en-US]mmmm dd, yyyy hh:mm AM/PM\") & \r\n                                      \"</p></div></body></html>\"\r\n                                  );\r\n                                  \r\n                                  // 5. TRIGGER PDF GENERATION\r\n                                  tmrPDFDelay.Start\r\n                              )\r\n                          )"
+                  Text: =
+                  Width: |+
+                    =200
+                  X: =549
+                  Y: =15
+      - tmrPDFDelay:
+          Control: Timer@2.1.0
+          Properties:
+            Duration: =500
+            OnTimerEnd: |-
+              =// 1. Generate the PDF from the template screen.
+              Set(gblAuditPDF, PDF(scrPDFReport, { Size: PaperSize.Letter, DPI: 96 }));
+
+              // 2. Check if the PDF was created successfully.
+              If(
+                  !IsBlank(gblAuditPDF),
+                  // --- If PDF is created, call the flow ---
+                  'PowerAppV2->Createfile'.Run(
+                      // The order of these arguments MUST exactly match your flow's trigger.
+                      // Based on your last flow definition:
+                      {  // Argument 1: pdfContent (file object)
+                          name: gblSelectedFacility.Title & " ECR " & Text(Now(), "yyyy-MM-dd") & ".pdf",
+                          contentBytes: gblAuditPDF
+                      },
+                      gblSelectedFacility.Title & " ECR " & Text(Now(), "yyyy-MM-dd") & ".pdf",  // Argument 2: fileName
+                      varFinalScore, // Argument 3: auditScore
+                      User().FullName, // Argument 4: auditorName
+                      gblWeatherConditions, // Argument 5: weather
+                      gblCurrentLocation.Latitude, // Argument 6: latitude
+                      gblCurrentLocation.Longitude, // Argument 7: longitude
+                      gblSelectedFacility.ID // Argument 8: facilityId
+                  );
+                  Notify("Audit submitted and PDF report uploaded!", NotificationType.Success, 5000);
+                  ,
+                  // --- If PDF fails to generate ---
+                  Notify("Audit data was saved, but the PDF report failed to generate.", NotificationType.Warning, 5000)
+              );
+
+              // 3. Reset the app state and navigate back to the main menu.
+              Set(gblIsSubmitting, false);
+              Set(varResetApp, true);
+              Navigate(scrMenu, ScreenTransition.Fade);
+            Start: |+
+              =
+            Visible: =false

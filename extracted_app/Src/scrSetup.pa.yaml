@@ -1,0 +1,900 @@
+# ************************************************************************************************
+# Warning: YAML source code for Canvas Apps should only be used to review changes made within Power Apps Studio and for minor edits (Preview).
+# Use the maker portal to create and edit your Power Apps.
+# 
+# The schema file for Canvas Apps is available at https://go.microsoft.com/fwlink/?linkid=2304907
+# 
+# For more information, visit https://go.microsoft.com/fwlink/?linkid=2292623
+# ************************************************************************************************
+Screens:
+  scrSetup:
+    Properties:
+      Fill: =gblTheme.Background
+      LoadingSpinnerColor: =gblTheme.Accent
+      OnVisible: |-
+        =Clear(colPreviousFindings);
+        UpdateContext({
+            locSetupComplete: false,
+            locLocationCaptured: false,
+            locWeatherEntered: false,
+            locFacilitySelected: false,
+            locDesktopReviewAvailable: false
+        });
+        Patch(gblValidation, gblValidation, {FacilityValid: false});
+        Patch(gblValidation, gblValidation, {LocationValid: false});
+        Patch(gblValidation, gblValidation, {WeatherValid: false});
+        
+        // Load previous unresolved findings
+        If(
+            !IsBlank(gblSelectedFacility),
+            Collect(
+                colPreviousFindings,
+                Filter('ECR Corrective Actions',
+                    'Facility L'.Value = gblSelectedFacility.Title And
+                    'CA Status'.Value = "Unresolved"
+                )
+            );
+            
+            // Check for recent Desktop Review and auto-populate
+            With(
+                {
+                    recentDesktopReview: LookUp(
+                        'ECR Desktop Reviews',
+                        Facility_x0020_1.Value = gblSelectedFacility.Title &&
+                        AuditDate >= DateAdd(Today(), -90, Days),
+                        AuditDate
+                    )
+                },
+                If(
+                    !IsBlank(recentDesktopReview),
+                    Set(gblDesktopReviewData, recentDesktopReview);
+                    UpdateContext({locDesktopReviewAvailable: true});
+                    Notify(
+                        "Desktop Review from " & Text(recentDesktopReview.AuditDate, "mm/dd/yyyy") & " loaded. Key findings will be pre-populated.",
+                        NotificationType.Success,
+                        5000
+                    )
+                )
+            )
+        );
+    Children:
+      - hedAuditHeader_1:
+          Control: Header@0.0.44
+          Properties:
+            BorderColor: =gblTheme.Border
+            BorderThickness: =1
+            Fill: =gblTheme.PrimaryDark
+            FontColor: =gblTheme.TextPrimary
+            Height: =gblDevice.HeaderHeight
+            Logo: =HeroImage_CH
+            Title: =gblAuditType & " Audit Setup"
+            TitleFontSize: =22
+      - svMain:
+          Control: Gallery@2.15.0
+          Variant: BrowseLayout_Vertical_OneTextVariant_ver5.0
+          Properties:
+            BorderColor: '=RGBA(0, 0, 0, 0) '
+            Fill: =gblTheme.Background
+            Height: =Parent.Height - gblDevice.HeaderHeight
+            Items: =[1]
+            ShowScrollbar: '=true '
+            TemplateSize: =If(IsEmpty(colPreviousFindings), 1600, 1800)
+            Width: =Parent.Width
+            Y: =gblDevice.HeaderHeight
+          Children:
+            - conSetupContent:
+                Control: GroupContainer@1.3.0
+                Variant: ManualLayout
+                Properties:
+                  DropShadow: =DropShadow.None
+                  Height: =Parent.Height
+                  Width: =Min(800, Parent.Width-40)
+                  X: =(Parent.Width - Self.Width) / 2
+                Children:
+                  - conProgress:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        DropShadow: =DropShadow.Regular
+                        Height: |+
+                          =100
+                        Width: =Parent.Width
+                        Y: =20
+                      Children:
+                        - galProgress:
+                            Control: Gallery@2.15.0
+                            Variant: BrowseLayout_Horizontal_TwoTextOneImageVariant_ver5.0
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              BorderStyle: =BorderStyle.None
+                              BorderThickness: |+
+                                =1
+                              Height: =80
+                              Items: =[1, 2, 3]
+                              ShowScrollbar: =false
+                              TemplateSize: =Parent.Width / 3
+                              Width: =Parent.Width -10
+                              X: =5
+                            Children:
+                              - recStep:
+                                  Control: Rectangle@2.3.0
+                                  Properties:
+                                    BorderColor: =RGBA(0, 0, 0, 0)
+                                    BorderStyle: =BorderStyle.None
+                                    BorderThickness: =2
+                                    DisabledFill: =RGBA(161, 159, 157, 1)
+                                    Fill: |-
+                                      =If(
+                                                                      Switch(ThisItem.Value,
+                                                                          1, locFacilitySelected,
+                                                                          2, locLocationCaptured,
+                                                                          3, locWeatherEntered
+                                                                      ),
+                                                                      gblTheme.Success,
+                                                                      gblTheme.BorderLight
+                                                                  )
+                                    FocusedBorderThickness: =4
+                                    Height: =16
+                                    HoverFill: =
+                                    PressedFill: =
+                                    Width: =Parent.TemplateWidth - 40
+                                    X: =20
+                                    Y: =24
+                              - lblStepName:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    Align: =Align.Center
+                                    BorderColor: =RGBA(0, 0, 0, 0)
+                                    Color: =gblTheme.TextSecondary
+                                    FontWeight: |-
+                                      =If(
+                                                                Switch(ThisItem.Value,
+                                                                    1, locFacilitySelected,
+                                                                    2, locLocationCaptured,
+                                                                    3, locWeatherEntered
+                                                                ),
+                                                                FontWeight.Semibold,
+                                                                FontWeight.Normal
+                                                            )
+                                    Height: =20
+                                    Size: =14 * gblDevice.FontScale
+                                    Text: |-
+                                      =Switch(ThisItem.Value,
+                                                                1, "Facility",
+                                                                2, "Location",
+                                                                3, "Weather"
+                                                            )
+                                    Width: =242.66666666666663
+                                    Y: =60
+                              - circStep:
+                                  Control: Circle@2.3.0
+                                  Properties:
+                                    BorderColor: |-
+                                      =If(
+                                                                Switch(ThisItem.Value,
+                                                                    1, locFacilitySelected,
+                                                                    2, locLocationCaptured,
+                                                                    3, locWeatherEntered
+                                                                ),
+                                                                gblTheme.Success,
+                                                                gblTheme.Border
+                                                            )
+                                    BorderStyle: =BorderStyle.None
+                                    BorderThickness: =2
+                                    DisabledFill: =RGBA(0, 120, 212, 1)
+                                    Fill: |-
+                                      =If(
+                                                                      Switch(ThisItem.Value,
+                                                                          1, locFacilitySelected,
+                                                                          2, locLocationCaptured,
+                                                                          3, locWeatherEntered
+                                                                      ),
+                                                                      gblTheme.Success,
+                                                                      gblTheme.Surface
+                                                                  )
+                                    Height: =50
+                                    HoverFill: =
+                                    PressedFill: =
+                                    Width: =50
+                                    X: =(Parent.TemplateWidth - Self.Width) / 2
+                                    Y: =5
+                              - icoStep:
+                                  Control: Classic/Icon@2.5.0
+                                  Properties:
+                                    Color: |-
+                                      =If(
+                                                                Switch(ThisItem.Value,
+                                                                    1, locFacilitySelected,
+                                                                    2, locLocationCaptured,
+                                                                    3, locWeatherEntered
+                                                                ),
+                                                                gblTheme.TextPrimary,
+                                                                gblTheme.TextTertiary
+                                                            )
+                                    Height: =40
+                                    Icon: |-
+                                      =Switch(ThisItem.Value,
+                                                                1, Icon.OfficeBuilding,
+                                                                2, Icon.Waypoint,
+                                                                3, Icon.Weather
+                                                            )
+                                    Width: =40
+                                    X: |+
+                                      =(Parent.TemplateWidth - Self.Width) / 2
+                                    Y: =10
+                  - conFacility:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        Width: =Parent.Width
+                        Y: =120
+                      Children:
+                        - recFacilityBg:
+                            Control: Rectangle@2.3.0
+                            Properties:
+                              BorderColor: =If(locFacilitySelected, gblTheme.Success, gblTheme.BorderLight)
+                              BorderThickness: =If(locFacilitySelected, 2, 1)
+                              DisabledFill: =
+                              Fill: =gblTheme.Surface
+                              FocusedBorderThickness: =4
+                              Height: =Parent.Height
+                              HoverFill: =
+                              PressedFill: =
+                              Width: =Parent.Width -10
+                              X: =5
+                        - lblFacilityTitle:
+                            Control: Label@2.5.1
+                            Properties:
+                              BorderColor: =RGBA(0, 0, 0, 0)
+                              Color: =gblTheme.TextSecondary
+                              FontWeight: =FontWeight.Semibold
+                              Height: =30
+                              Size: =18 * gblDevice.FontScale
+                              Text: ="Select Facility"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =20
+                        - ddFacility:
+                            Control: Classic/ComboBox@2.4.0
+                            Properties:
+                              BorderColor: =RGBA(245, 245, 245, 1)
+                              ChevronBackground: =gblTheme.Surface
+                              ChevronDisabledBackground: =RGBA(242, 242, 241, 0)
+                              ChevronDisabledFill: =RGBA(161, 159, 157, 1)
+                              ChevronFill: =gblTheme.TextSecondary
+                              ChevronHoverBackground: =RGBA(245, 245, 245, 1)
+                              ChevronHoverFill: =RGBA(50, 49, 48, 1)
+                              Color: =gblTheme.TextSecondary
+                              DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                              DisabledColor: =RGBA(161, 159, 157, 1)
+                              DisabledFill: =RGBA(242, 242, 241, 0)
+                              DisplayFields: =["Title"]
+                              Fill: =gblTheme.Surface
+                              Font: =Font.'Segoe UI'
+                              Height: =gblDevice.InputHeight
+                              HoverBorderColor: =RGBA(16, 110, 190, 1)
+                              HoverColor: =RGBA(50, 49, 48, 1)
+                              HoverFill: =RGBA(245, 245, 245, 1)
+                              InputTextPlaceholder: ="Search facilities..."
+                              Items: =Sort(colFacilities, Title, SortOrder.Ascending)
+                              OnChange: |-
+                                =Set(gblSelectedFacility, Self.Selected); 
+                                                      UpdateContext({locFacilitySelected: !IsBlank(Self.Selected)}); 
+                                                      Patch(gblValidation, gblValidation, {FacilityValid: locFacilitySelected});
+                                                      Clear(colPreviousFindings); 
+                                                      If(
+                                                          !IsBlank(Self.Selected), 
+                                                          Collect(
+                                                              colPreviousFindings, 
+                                                              Filter('ECR Corrective Actions', 'Facility L'.Value = Self.Selected.Title And 'CA Status'.Value = "Unresolved")
+                                                          )
+                                                      )
+                              PaddingLeft: =12
+                              PressedBorderColor: =RGBA(16, 110, 190, 1)
+                              PressedColor: =RGBA(255, 255, 255, 1)
+                              PressedFill: =RGBA(0, 120, 212, 1)
+                              SearchFields: =["Title"]
+                              SelectMultiple: =false
+                              SelectionColor: =RGBA(255, 255, 255, 1)
+                              SelectionFill: =RGBA(0, 120, 212, 1)
+                              Size: =16 * gblDevice.FontScale
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =60
+                        - lblFacilityInfo:
+                            Control: Label@2.5.1
+                            Properties:
+                              BorderColor: =RGBA(0, 0, 0, 0)
+                              BorderStyle: =BorderStyle.None
+                              BorderThickness: =2
+                              Color: =gblTheme.TextTertiary
+                              DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                              DisabledColor: =RGBA(161, 159, 157, 1)
+                              FocusedBorderThickness: =4
+                              Font: =Font.'Segoe UI'
+                              Text: |-
+                                =If(!IsBlank(gblSelectedFacility), "Contact: " & gblSelectedFacility.'Facility Contact' & If(!IsBlank(gblSelectedFacility.'Site Address'), " | " & gblSelectedFacility.'Site Address', ""), "Please select a facility to continue")
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =130
+                        - icoFacilityCheck:
+                            Control: Icon@0.0.7
+                            Properties:
+                              Height: =30
+                              Icon: ="Checkmark"
+                              IconColor: =gblTheme.Success
+                              IconStyle: ='Icon.IconStyle'.Filled
+                              Visible: =locFacilitySelected
+                              Width: =30
+                              X: =Parent.Width - 50
+                              Y: =20
+                  - conLocation:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        Width: =Parent.Width
+                        Y: =340
+                      Children:
+                        - recLocationBg:
+                            Control: Rectangle@2.3.0
+                            Properties:
+                              BorderColor: =If(locLocationCaptured, gblTheme.Success, gblTheme.BorderLight)
+                              BorderThickness: =If(locLocationCaptured, 2, 1)
+                              DisabledFill: =
+                              Fill: =gblTheme.Surface
+                              FocusedBorderThickness: =4
+                              Height: =Parent.Height
+                              HoverFill: =
+                              PressedFill: =
+                              Width: =Parent.Width - 10
+                              X: =5
+                        - lblLocationTitle:
+                            Control: Label@2.5.1
+                            Properties:
+                              BorderColor: =RGBA(0, 0, 0, 0)
+                              Color: =gblTheme.TextSecondary
+                              FontWeight: =FontWeight.Semibold
+                              Height: =30
+                              Size: =18 * gblDevice.FontScale
+                              Text: ="Capture Location"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =20
+                        - btnGetLocation:
+                            Control: Classic/Button@2.2.0
+                            Properties:
+                              BorderColor: =If(locLocationCaptured, gblTheme.Success, gblTheme.Border)
+                              BorderStyle: =BorderStyle.None
+                              BorderThickness: =21
+                              Color: =If(locLocationCaptured, gblTheme.TextPrimary, gblTheme.TextPrimary)
+                              DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                              DisabledColor: =gblTheme.TextTertiary
+                              DisabledFill: =gblTheme.BorderLight
+                              Fill: =If(locLocationCaptured, gblTheme.Success, gblTheme.Accent)
+                              Font: =Font.'Segoe UI'
+                              Height: =gblDevice.ButtonHeight
+                              HoverBorderColor: =RGBA(0, 0, 0, 0)
+                              HoverColor: =ColorFade(Self.Fill, -10%)
+                              HoverFill: =RGBA(16, 110, 190, 1)
+                              OnSelect: |-
+                                =// This just gets the location. The button's DisplayMode handles the logic.
+                                Set(gblCurrentLocation, Location);
+                                If(gblCurrentLocation.Latitude = 0, Notify("Could not get a valid GPS signal.", NotificationType.Warning));
+                              PressedBorderColor: =RGBA(0, 69, 120, 1)
+                              PressedColor: =RGBA(255, 255, 255, 1)
+                              PressedFill: =ColorFade(Self.Fill, -20%)
+                              RadiusBottomLeft: =gblDevice.ButtonRadius
+                              RadiusBottomRight: =gblDevice.ButtonRadius
+                              RadiusTopLeft: =gblDevice.ButtonRadius
+                              RadiusTopRight: =gblDevice.ButtonRadius
+                              Size: =16 * gblDevice.FontScale
+                              Text: |-
+                                =If(locLocationCaptured, "✓ Location Captured", "📍 Capture GPS Location")
+                              Width: =300
+                              X: =20
+                              Y: =60
+                        - lblLocationValue:
+                            Control: Label@2.5.1
+                            Properties:
+                              BorderColor: =RGBA(0, 0, 0, 0)
+                              BorderStyle: =BorderStyle.None
+                              BorderThickness: =2
+                              Color: =If(locLocationCaptured, gblTheme.Success, gblTheme.TextTertiary)
+                              DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                              DisabledColor: =RGBA(161, 159, 157, 1)
+                              FocusedBorderThickness: =4
+                              Font: =Font.'Segoe UI'
+                              Height: =30
+                              Size: =14 * gblDevice.FontScale
+                              Text: |-
+                                =If(gblCurrentLocation.Latitude <> 0, "📍 " & Round(gblCurrentLocation.Latitude, 5) & ", " & Round(gblCurrentLocation.Longitude, 5) & If(!IsBlank(gblCurrentLocation.Accuracy), " (±" & Round(gblCurrentLocation.Accuracy, 0) & "m)", ""), "GPS location required for audit")
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =140
+                        - lblLocatioinTimestamp:
+                            Control: Label@2.5.1
+                            Properties:
+                              BorderColor: =RGBA(0, 0, 0, 0)
+                              BorderStyle: =BorderStyle.None
+                              BorderThickness: =2
+                              Color: =RGBA(50, 49, 48, 1)
+                              DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                              DisabledColor: =RGBA(161, 159, 157, 1)
+                              FocusedBorderThickness: =4
+                              Font: =Font.'Segoe UI'
+                              Height: =20
+                              Size: =12 * gblDevice.FontScale
+                              Text: |-
+                                =If(locLocationCaptured, "Captured: " & Text(Now(), "hh:mm AM/PM"), "")
+                              Visible: =locLocationCaptured
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =165
+                        - icoLocationCheck:
+                            Control: Icon@0.0.7
+                            Properties:
+                              Height: =30
+                              Icon: ="Checkmark"
+                              IconColor: =gblTheme.Success
+                              IconStyle: ='Icon.IconStyle'.Filled
+                              Visible: =locLocationCaptured
+                              Width: =30
+                              X: =Parent.Width - 50
+                              Y: =20
+                  - conGeneralObservations:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        BorderThickness: =1
+                        Width: =Parent.Width
+                        Y: =580
+                      Children:
+                        - lblGeneralObs:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              FontWeight: =FontWeight.Semibold
+                              Size: =16 * gblDevice.FontScale
+                              Text: |-
+                                ="📋 General Site Observations"
+                              X: =20
+                              Y: =15
+                        - txtGeneralObservations:
+                            Control: Classic/TextInput@2.3.2
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              Font: =Font.'Segoe UI'
+                              Height: =120
+                              HintText: ="Overall site conditions, cleanliness, organization, visible concerns, positive observations..."
+                              Mode: =TextMode.MultiLine
+                              Size: =14 * gblDevice.FontScale
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =50
+                  - conWeather:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        Width: =Parent.Width
+                        Y: =560
+                      Children:
+                        - recWeatherBg:
+                            Control: Rectangle@2.3.0
+                            Properties:
+                              BorderColor: =If(locWeatherEntered, gblTheme.Success, gblTheme.BorderLight)
+                              BorderThickness: =If(locWeatherEntered, 2, 1)
+                              DisabledFill: =
+                              Fill: =gblTheme.Surface
+                              FocusedBorderThickness: =4
+                              Height: =Parent.Height
+                              HoverFill: =
+                              PressedFill: =
+                              Width: =Parent.Width - 10
+                              X: =5
+                        - galWeatherQuick:
+                            Control: Gallery@2.15.0
+                            Variant: BrowseLayout_Horizontal_TwoTextOneImageVariant_ver5.0
+                            Properties:
+                              BorderColor: =RGBA(0, 0, 0, 0)
+                              Height: =40
+                              Items: |-
+                                =["☀️ Clear", "☁️ Cloudy", "🌧️ Rain", "❄️ Snow", "💨 Windy"]
+                              ShowScrollbar: =false
+                              TemplateSize: =(Self.Width - 40) / 5
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =155
+                            Children:
+                              - btnQuickWeather:
+                                  Control: Classic/Button@2.2.0
+                                  Properties:
+                                    BorderColor: =gblTheme.Border
+                                    BorderStyle: =BorderStyle.None
+                                    BorderThickness: =1
+                                    Color: =gblTheme.TextSecondary
+                                    DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                                    DisabledColor: =RGBA(161, 159, 157, 1)
+                                    DisabledFill: =RGBA(242, 242, 241, 0)
+                                    Fill: =gblTheme.Shadow
+                                    Font: =Font.'Segoe UI'
+                                    Height: =36
+                                    HoverBorderColor: =RGBA(0, 0, 0, 0)
+                                    HoverColor: =RGBA(255, 255, 255, 1)
+                                    HoverFill: =gblTheme.SurfaceHover
+                                    OnSelect: |-
+                                      =// This sets the global variable AND updates the text input box.
+                                      Set(gblWeatherConditions, Trim(Mid(ThisItem.Value, 4, 100)));
+                                    PressedBorderColor: =RGBA(0, 69, 120, 1)
+                                    PressedColor: =RGBA(255, 255, 255, 1)
+                                    PressedFill: =gblTheme.AccentLight
+                                    RadiusBottomLeft: =8
+                                    RadiusBottomRight: =8
+                                    RadiusTopLeft: =8
+                                    RadiusTopRight: =8
+                                    Size: =12 * gblDevice.FontScale
+                                    Text: =ThisItem.Value
+                                    Width: =Parent.TemplateWidth - 4
+                                    X: =2
+                                    Y: =2
+                        - lblWeatherTitle:
+                            Control: Label@2.5.1
+                            Properties:
+                              BorderColor: =RGBA(0, 0, 0, 0)
+                              Color: =gblTheme.TextSecondary
+                              FontWeight: =FontWeight.Semibold
+                              Height: =30
+                              Size: =18 * gblDevice.FontScale
+                              Text: ="Weather Conditions"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =20
+                        - lblQuickWeather:
+                            Control: Label@2.5.1
+                            Properties:
+                              BorderColor: =RGBA(0, 0, 0, 0)
+                              BorderStyle: =BorderStyle.None
+                              Color: =If(locLocationCaptured, gblTheme.Success, gblTheme.TextTertiary)
+                              DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                              DisabledColor: =RGBA(161, 159, 157, 1)
+                              FocusedBorderThickness: =4
+                              Font: =Font.'Segoe UI'
+                              Height: =30
+                              Size: =12 * gblDevice.FontScale
+                              Text: ="Quick options:"
+                              Width: |+
+                                =120
+                              X: =20
+                              Y: =130
+                        - lblWeatherNote:
+                            Control: Label@2.5.1
+                            Properties:
+                              BorderColor: =RGBA(0, 0, 0, 0)
+                              BorderStyle: =BorderStyle.None
+                              BorderThickness: =2
+                              Color: =RGBA(50, 49, 48, 1)
+                              DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                              DisabledColor: =RGBA(161, 159, 157, 1)
+                              FocusedBorderThickness: =4
+                              Font: =Font.'Segoe UI'
+                              Height: =20
+                              Italic: =true
+                              Size: =11 * gblDevice.FontScale
+                              Text: ="Weather data based on facility location"
+                              Visible: =locLocationCaptured
+                              Width: =Parent.Width - 240
+                              X: =230
+                              Y: =210
+                        - icoWeatherCheck:
+                            Control: Icon@0.0.7
+                            Properties:
+                              Height: =30
+                              Icon: ="Checkmark"
+                              IconColor: =gblTheme.Success
+                              IconStyle: ='Icon.IconStyle'.Filled
+                              Visible: =locWeatherEntered
+                              Width: =30
+                              X: =Parent.Width - 50
+                              Y: =20
+                        - txtWeather:
+                            Control: Classic/TextInput@2.3.2
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              BorderThickness: =1
+                              Color: =gblTheme.TextSecondary
+                              Default: =Coalesce(gblWeatherConditions, "")
+                              DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                              DisabledColor: =RGBA(161, 159, 157, 1)
+                              DisabledFill: =RGBA(242, 242, 241, 0)
+                              Fill: =gblTheme.Surface
+                              Font: =Font.'Segoe UI'
+                              Height: =gblDevice.InputHeight
+                              HintText: ="e.g., Sunny, 72°F, light wind"
+                              HoverBorderColor: =RGBA(16, 110, 190, 1)
+                              HoverColor: =RGBA(50, 49, 48, 1)
+                              HoverFill: =RGBA(255, 255, 255, 1)
+                              OnChange: |-
+                                =Set(gblWeatherConditions, Self.Text);
+                                Set(gblWeatherConditions, Trim(Self.Text));
+                                UpdateContext({locWeatherEntered: !IsBlank(Trim(Self.Text))});
+                                Patch(gblValidation, gblValidation, {WeatherValid: locWeatherEntered})
+                              PressedBorderColor: =RGBA(0, 120, 212, 1)
+                              PressedColor: =RGBA(50, 49, 48, 1)
+                              PressedFill: =RGBA(255, 255, 255, 1)
+                              RadiusBottomLeft: =4
+                              RadiusBottomRight: =4
+                              RadiusTopLeft: =4
+                              RadiusTopRight: =4
+                              Size: =16 * gblDevice.FontScale
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =60
+                        - btnGetWeather:
+                            Control: Classic/Button@2.2.0
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              BorderStyle: =BorderStyle.None
+                              BorderThickness: =1
+                              Color: =RGBA(255, 255, 255, 1)
+                              DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                              DisabledColor: =gblTheme.TextTertiary
+                              DisabledFill: =gblTheme.BorderLight
+                              DisplayMode: =If(locLocationCaptured, DisplayMode.Edit, DisplayMode.Disabled)
+                              Fill: =gblTheme.Surface
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Normal
+                              HoverBorderColor: =RGBA(0, 0, 0, 0)
+                              HoverColor: =RGBA(255, 255, 255, 1)
+                              HoverFill: =gblTheme.AccentLight
+                              OnSelect: |-
+                                =// Simplified weather button - remove Power Automate dependency
+                                UpdateContext({locFetchingWeather: true});
+                                Set(
+                                    gblWeatherConditions,
+                                    "Clear, 72°F, 5 mph winds, 45% humidity"
+                                );
+                                UpdateContext({
+                                    locWeatherEntered: true,
+                                    locFetchingWeather: false
+                                });
+                                Notify("Weather data set to default values", NotificationType.Information)
+                              PressedBorderColor: =RGBA(0, 69, 120, 1)
+                              PressedColor: =gblTheme.TextPrimary
+                              PressedFill: =gblTheme.Accent
+                              RadiusBottomLeft: =gblDevice.ButtonRadius
+                              RadiusBottomRight: =gblDevice.ButtonRadius
+                              RadiusTopLeft: =gblDevice.ButtonRadius
+                              RadiusTopRight: =gblDevice.ButtonRadius
+                              Size: =14 * gblDevice.FontScale
+                              Text: |-
+                                =If(locFetchingWeather, "Getting weather...", "🌤️ Get Current Weather")
+                              Width: =129.6
+                              X: =20
+                              Y: =210
+                  - conPreviousFindings:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        Height: =If(IsEmpty(colPreviousFindings), 900, 900)
+                        Visible: =!IsEmpty(colPreviousFindings)
+                        Width: =Parent.Width
+                        Y: =900
+                      Children:
+                        - lblPreviousTitle:
+                            Control: Label@2.5.1
+                            Properties:
+                              BorderColor: =RGBA(0, 0, 0, 0)
+                              BorderStyle: =BorderStyle.None
+                              BorderThickness: =2
+                              Color: =gblTheme.Error
+                              DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                              DisabledColor: =RGBA(161, 159, 157, 1)
+                              FocusedBorderThickness: =4
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Bold
+                              Height: =180
+                              Size: =18 * gblDevice.FontScale
+                              Text: ="⚠ Previous Unresolved Findings (" & CountRows(colPreviousFindings) & ")"
+                              Width: =Parent.Width
+                              Y: =10
+                        - galFindings:
+                            Control: Gallery@2.15.0
+                            Variant: BrowseLayout_Vertical_OneTextVariant_ver5.0
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              BorderThickness: =1
+                              Fill: =gblTheme.Background
+                              Height: =900
+                              Items: =colPreviousFindings
+                              TemplatePadding: =5
+                              TemplateSize: =800
+                              Width: =Parent.Width - 20
+                              X: =10
+                              Y: =50
+                            Children:
+                              - recFindingBg:
+                                  Control: Rectangle@2.3.0
+                                  Properties:
+                                    BorderColor: =gblTheme.Error
+                                    BorderThickness: =1
+                                    Fill: =gblTheme.ErrorLight
+                                    Height: =Parent.TemplateHeight - 4
+                                    OnSelect: =Select(Parent)
+                                    Width: =Parent.Width - 16
+                                    X: =4
+                                    Y: =2
+                              - lblFindingTitle:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    BorderColor: =RGBA(0, 0, 0, 0)
+                                    Color: =gblTheme.TextSecondary
+                                    FontWeight: =FontWeight.Semibold
+                                    Height: =50
+                                    Size: =14 * gblDevice.FontScale
+                                    Text: =ThisItem.Title
+                                    Width: =448
+                                    Wrap: '=true '
+                                    X: =20
+                                    Y: =15
+                              - lblFindingDetails:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    BorderColor: =RGBA(0, 0, 0, 0)
+                                    Color: =gblTheme.TextTertiary
+                                    FontWeight: =FontWeight.Semibold
+                                    Height: =20
+                                    Size: =12 * gblDevice.FontScale
+                                    Text: =ThisItem.'Finding Category (Main Choice)'.Value & " | " & ThisItem.'Severity of Finding'.Value & " | " & Text(ThisItem.'Date of Finding', "mm/dd/yyyy")
+                                    Width: =Parent.Width - 140
+                                    Wrap: =false
+                                    X: =20
+                                    Y: =73
+                              - btnResolve:
+                                  Control: Button@0.0.45
+                                  Properties:
+                                    BorderRadiusBottomLeft: =8
+                                    BorderRadiusBottomRight: =8
+                                    BorderRadiusTopLeft: =8
+                                    BorderRadiusTopRight: =8
+                                    Height: =40
+                                    OnSelect: |-
+                                      =// Update the item in SharePoint
+                                      Patch(
+                                          'ECR Corrective Actions',
+                                          ThisItem,
+                                          {'CA Status': {Value: "Resolved"}}
+                                      );
+
+                                      // Use RemoveIf with the unique ID to reliably remove the item from the local collection
+                                      RemoveIf(colPreviousFindings, ID = ThisItem.ID);
+
+                                      // Notify the user
+                                      Notify("Finding marked as resolved.", NotificationType.Success);
+                                    Text: ="Mark as Resolved"
+                                    Width: =120
+                                    X: =Parent.Width - 240
+                                    Y: =50
+                              - imgFinding:
+                                  Control: Image@2.2.3
+                                  Properties:
+                                    BorderColor: =gblTheme.Border
+                                    BorderThickness: =1
+                                    Height: =80
+                                    Image: =First(ThisItem.Attachments).Value
+                                    ImagePosition: =ImagePosition.Fill
+                                    ImageRotation: =ImageRotation.Rotate270
+                                    OnSelect: |-
+                                      =UpdateContext({
+                                          showEnlargedImage: true,
+                                          selectedImage: First(ThisItem.Attachments).Value
+                                      })
+                                    RadiusBottomLeft: =4
+                                    RadiusBottomRight: =4
+                                    RadiusTopLeft: =4
+                                    RadiusTopRight: =4
+                                    Visible: =!IsEmpty(ThisItem.Attachments)
+                                    Width: =80
+                                    X: =Parent.Width - 110
+                                    Y: =10
+                  - btnStartAudit:
+                      Control: Classic/Button@2.2.0
+                      Properties:
+                        BorderColor: |+
+                          =gblTheme.Border
+                        BorderStyle: =BorderStyle.None
+                        BorderThickness: =0
+                        Color: =RGBA(255, 255, 255, 1)
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        DisabledColor: =gblTheme.TextTertiary
+                        DisabledFill: =gblTheme.BorderLight
+                        DisplayMode: |-
+                          =If(
+                                                        !IsBlank(ddFacility.Selected) &&
+                                                        gblCurrentLocation.Latitude <> 0 &&
+                                                        !IsBlank(txtWeather.Text),
+                                                        DisplayMode.Edit, 
+                                                        DisplayMode.Disabled
+                                                    )
+                        Fill: |+
+                          =gblTheme.Success
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Bold
+                        Height: |+
+                          =gblDevice.ButtonHeight + 10
+                        HoverBorderColor: =RGBA(0, 0, 0, 0)
+                        HoverColor: =RGBA(255, 255, 255, 1)
+                        HoverFill: =ColorFade(Self.Fill, -10%)
+                        OnSelect: "=// Validate and capture all setup data\r\nIf(\r\n    IsBlank(ddFacility.Selected) || \r\n    gblCurrentLocation.Latitude = 0 || \r\n    IsBlank(txtWeather.Text) ||\r\n    IsBlank(txtGeneralObservations.Text),\r\n    \r\n    // Show what's missing\r\n    Notify(\r\n        \"Please complete all required fields: \" &\r\n        If(IsBlank(ddFacility.Selected), \"Facility, \", \"\") &\r\n        If(gblCurrentLocation.Latitude = 0, \"Location, \", \"\") &\r\n        If(IsBlank(txtWeather.Text), \"Weather, \", \"\") &\r\n        If(IsBlank(txtGeneralObservations.Text), \"General Observations\", \"\"),\r\n        NotificationType.Warning\r\n    ),\r\n    \r\n    // All good - proceed\r\n    Set(gblGeneralObservations, txtGeneralObservations.Text);\r\n    Set(gblWeatherConditions, txtWeather.Text);\r\n    Navigate(scrAudit, ScreenTransition.Cover)\r\n);"
+                        PressedBorderColor: =RGBA(0, 69, 120, 1)
+                        PressedColor: =RGBA(255, 255, 255, 1)
+                        PressedFill: =ColorFade(Self.Fill, -20%)
+                        RadiusBottomLeft: =gblDevice.ButtonRadius
+                        RadiusBottomRight: =gblDevice.ButtonRadius
+                        RadiusTopLeft: =gblDevice.ButtonRadius
+                        RadiusTopRight: =gblDevice.ButtonRadius
+                        Size: =18 * gblDevice.FontScale
+                        Text: ="Start " & gblAuditType & " Audit →"
+                        Width: =Min(400, Parent.Width - 40)
+                        X: =(Parent.Width - Self.Width) / 2
+                        Y: =780
+      - recPhotoOverlay:
+          Control: Rectangle@2.3.0
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            DisabledFill: =RGBA(161, 159, 157, 1)
+            Fill: =RGBA(0, 0, 0, 0.5)
+            FocusedBorderThickness: =4
+            Height: =Parent.Height - 100
+            HoverFill: =
+            OnSelect: |-
+              =UpdateContext({showEnlargedImage: false})
+            PressedFill: =
+            Visible: =showEnlargedImage
+            Width: =Parent.Width -80
+            X: =40
+            Y: =40
+      - imgEnlarged:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            BorderStyle: =BorderStyle.None
+            BorderThickness: =2
+            DisabledBorderColor: =RGBA(0, 0, 0, 0)
+            DisabledFill: =RGBA(0, 0, 0, 0)
+            FocusedBorderThickness: =4
+            Height: =924
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverFill: =RGBA(0, 0, 0, 0)
+            Image: =selectedImage
+            ImageRotation: =ImageRotation.Rotate270
+            PressedBorderColor: =RGBA(0, 0, 0, 0)
+            PressedFill: =RGBA(0, 0, 0, 0)
+            Visible: =showEnlargedImage
+            Width: =614
+            X: =77
+            Y: =40
+      - closeImg:
+          Control: Classic/Icon@2.5.0
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            Color: =Color.White
+            DisabledBorderColor: =RGBA(245, 245, 245, 1)
+            DisabledColor: =RGBA(225, 223, 221, 1)
+            DisabledFill: =RGBA(0, 0, 0, 0)
+            FocusedBorderThickness: =4
+            Height: =40
+            HoverBorderColor: =RGBA(0, 0, 0, 0)
+            HoverColor: =RGBA(16, 110, 190, 1)
+            HoverFill: =
+            Icon: =Icon.Cancel
+            OnSelect: |-
+              =UpdateContext({showEnlargedImage: false})
+            PressedBorderColor: =RGBA(0, 0, 0, 0)
+            PressedColor: =RGBA(16, 110, 190, 1)
+            PressedFill: =
+            Visible: '=showEnlargedImage '
+            Width: =40
+            X: =680
+            Y: =44

@@ -1,0 +1,581 @@
+# ************************************************************************************************
+# Warning: YAML source code for Canvas Apps should only be used to review changes made within Power Apps Studio and for minor edits (Preview).
+# Use the maker portal to create and edit your Power Apps.
+# 
+# The schema file for Canvas Apps is available at https://go.microsoft.com/fwlink/?linkid=2304907
+# 
+# For more information, visit https://go.microsoft.com/fwlink/?linkid=2292623
+# ************************************************************************************************
+Screens:
+  scrASTReview:
+    Properties:
+      Fill: =gblTheme.Background
+      LoadingSpinnerColor: =gblTheme.Accent
+      OnVisible: |-
+        =Clear(colASTQuestions);
+        Clear(colASTFindings);
+        Set(gblASTInspectionType, "AST");
+        Set(gblSelectedTanks, []);
+        UpdateContext({locASTScore: 100});
+        UpdateContext({locMajorCount: 0, locMinorCount: 0});
+        
+        // Load tanks for selected facility
+        If(
+            !IsBlank(gblSelectedFacility),
+            ClearCollect(colFacilityTanks,
+                Filter(
+                    'Generators, ASTs & USTs',
+                    Facility.Value = gblSelectedFacility.Title
+                )
+            )
+        );
+        
+        // Initialize AST/SPCC Questions
+        ClearCollect(colASTQuestions,
+            // Tank Integrity
+            {Category: "Tank Integrity", Question: "Tank shell is free from corrosion and deterioration?", ID: "AST01", Finding: "", Severity: "", Photo: false},
+            {Category: "Tank Integrity", Question: "All tank seams and welds are intact with no leaks?", ID: "AST02", Finding: "", Severity: "", Photo: false},
+            {Category: "Tank Integrity", Question: "Tank foundation is stable and properly supported?", ID: "AST03", Finding: "", Severity: "", Photo: false},
+            {Category: "Tank Integrity", Question: "No visible staining or evidence of past leaks?", ID: "AST04", Finding: "", Severity: "", Photo: false},
+            {Category: "Tank Integrity", Question: "Tank label/nameplate is present and legible?", ID: "AST05", Finding: "", Severity: "", Photo: false},
+            
+            // Secondary Containment
+            {Category: "Secondary Containment", Question: "Secondary containment structure is present and adequate?", ID: "AST06", Finding: "", Severity: "", Photo: false},
+            {Category: "Secondary Containment", Question: "Containment capacity meets 110% of largest tank requirement?", ID: "AST07", Finding: "", Severity: "", Photo: false},
+            {Category: "Secondary Containment", Question: "Containment walls/berms are intact with no cracks?", ID: "AST08", Finding: "", Severity: "", Photo: false},
+            {Category: "Secondary Containment", Question: "Drainage valves are closed and secured?", ID: "AST09", Finding: "", Severity: "", Photo: false},
+            {Category: "Secondary Containment", Question: "No accumulated water, oil, or debris in containment?", ID: "AST10", Finding: "", Severity: "", Photo: false},
+            
+            // Piping & Valves
+            {Category: "Piping & Valves", Question: "All piping connections are secure with no leaks?", ID: "AST11", Finding: "", Severity: "", Photo: false},
+            {Category: "Piping & Valves", Question: "Valves are accessible and properly labeled?", ID: "AST12", Finding: "", Severity: "", Photo: false},
+            {Category: "Piping & Valves", Question: "No evidence of leaks at valve stems or flanges?", ID: "AST13", Finding: "", Severity: "", Photo: false},
+            {Category: "Piping & Valves", Question: "Flexible connectors are in good condition?", ID: "AST14", Finding: "", Severity: "", Photo: false},
+            
+            // Monitoring & Detection
+            {Category: "Monitoring & Detection", Question: "Level gauge/monitoring equipment is functional?", ID: "AST15", Finding: "", Severity: "", Photo: false},
+            {Category: "Monitoring & Detection", Question: "High-level alarm system tested and operational?", ID: "AST16", Finding: "", Severity: "", Photo: false},
+            {Category: "Monitoring & Detection", Question: "Overfill prevention system present and functional?", ID: "AST17", Finding: "", Severity: "", Photo: false},
+            {Category: "Monitoring & Detection", Question: "Leak detection system operational (if applicable)?", ID: "AST18", Finding: "", Severity: "", Photo: false},
+            
+            // SPCC Plan Compliance
+            {Category: "SPCC Plan", Question: "Current SPCC Plan available on-site?", ID: "AST19", Finding: "", Severity: "", Photo: false},
+            {Category: "SPCC Plan", Question: "SPCC Plan certified by PE within past 5 years?", ID: "AST20", Finding: "", Severity: "", Photo: false},
+            {Category: "SPCC Plan", Question: "Facility diagram in SPCC Plan matches current layout?", ID: "AST21", Finding: "", Severity: "", Photo: false},
+            {Category: "SPCC Plan", Question: "SPCC Plan amendments documented for any changes?", ID: "AST22", Finding: "", Severity: "", Photo: false},
+            {Category: "SPCC Plan", Question: "All tanks listed in SPCC Plan are accounted for?", ID: "AST23", Finding: "", Severity: "", Photo: false},
+            
+            // Inspections & Maintenance
+            {Category: "Inspections & Maintenance", Question: "Monthly visual inspections documented for past 12 months?", ID: "AST24", Finding: "", Severity: "", Photo: false},
+            {Category: "Inspections & Maintenance", Question: "Integrity testing current (every 5 years for tanks)?", ID: "AST25", Finding: "", Severity: "", Photo: false},
+            {Category: "Inspections & Maintenance", Question: "Maintenance logs available and up to date?", ID: "AST26", Finding: "", Severity: "", Photo: false},
+            {Category: "Inspections & Maintenance", Question: "Any repairs documented and properly completed?", ID: "AST27", Finding: "", Severity: "", Photo: false},
+            
+            // Spill Response
+            {Category: "Spill Response", Question: "Spill response equipment readily accessible?", ID: "AST28", Finding: "", Severity: "", Photo: false},
+            {Category: "Spill Response", Question: "Absorbent materials adequate for potential spills?", ID: "AST29", Finding: "", Severity: "", Photo: false},
+            {Category: "Spill Response", Question: "Emergency contact numbers posted and current?", ID: "AST30", Finding: "", Severity: "", Photo: false},
+            {Category: "Spill Response", Question: "Staff trained on spill response procedures?", ID: "AST31", Finding: "", Severity: "", Photo: false},
+            
+            // General Safety
+            {Category: "General Safety", Question: "Fire extinguisher present, charged, and inspected?", ID: "AST32", Finding: "", Severity: "", Photo: false},
+            {Category: "General Safety", Question: "No smoking signs posted in appropriate areas?", ID: "AST33", Finding: "", Severity: "", Photo: false},
+            {Category: "General Safety", Question: "Tank area fenced/secured against unauthorized access?", ID: "AST34", Finding: "", Severity: "", Photo: false},
+            {Category: "General Safety", Question: "Adequate clearance around tanks for inspection/maintenance?", ID: "AST35", Finding: "", Severity: "", Photo: false}
+        );
+        
+        UpdateContext({locCurrentCategory: "Tank Integrity"});
+    Children:
+      - hedHeader:
+          Control: Header@0.0.44
+          Properties:
+            BorderColor: =gblTheme.Border
+            BorderThickness: =1
+            Fill: =gblTheme.Warning
+            FontColor: =gblTheme.TextPrimary
+            Height: =gblDevice.HeaderHeight
+            Logo: =HeroImage_CH
+            OnSelect: =Navigate(scrMenu, ScreenTransition.UnCoverRight)
+            Title: ="AST/SPCC Tank Inspection"
+            TitleFontSize: =22
+      - conMainContent:
+          Control: Gallery@2.15.0
+          Variant: BrowseLayout_Vertical_OneTextVariant_ver5.0
+          Properties:
+            BorderColor: =RGBA(0, 0, 0, 0)
+            Fill: =gblTheme.Background
+            Height: =Parent.Height - gblDevice.HeaderHeight
+            Items: =[1]
+            ShowScrollbar: =true
+            TemplateSize: =1800
+            Width: =Parent.Width
+            Y: =gblDevice.HeaderHeight
+          Children:
+            - conContent:
+                Control: GroupContainer@1.3.0
+                Variant: ManualLayout
+                Properties:
+                  DropShadow: =DropShadow.None
+                  Height: =1780
+                  Width: =Min(1200, Parent.Width - 40)
+                  X: =(Parent.Width - Self.Width) / 2
+                  Y: =10
+                Children:
+                  - conFacilityInfo:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        DropShadow: =DropShadow.Regular
+                        Fill: =gblTheme.Surface
+                        Height: =220
+                        RadiusBottomLeft: =8
+                        RadiusBottomRight: =8
+                        RadiusTopLeft: =8
+                        RadiusTopRight: =8
+                        Width: =Parent.Width
+                      Children:
+                        - lblFacilitySelect:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Bold
+                              Height: =30
+                              Size: =18 * gblDevice.FontScale
+                              Text: ="Select Facility & Tank(s)"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =20
+                        - cmbFacilityAST:
+                            Control: Classic/DropDown@2.3.2
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              ChevronBackground: =gblTheme.Surface
+                              ChevronFill: =gblTheme.Warning
+                              Color: =gblTheme.TextSecondary
+                              DisplayFields: '=["Title"]'
+                              Font: =Font.'Segoe UI'
+                              Height: =50
+                              HintText: ="Select facility..."
+                              Items: =colFacilities
+                              OnChange: |-
+                                =Set(gblSelectedFacility, Self.Selected);
+                                ClearCollect(colFacilityTanks,
+                                    Filter(
+                                        'Generators, ASTs & USTs',
+                                        Facility.Value = gblSelectedFacility.Title
+                                    )
+                                );
+                                UpdateContext({locFacilitySelected: true})
+                              SearchFields: '=["Title"]'
+                              SelectMultiple: =false
+                              Size: =14 * gblDevice.FontScale
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =60
+                        - lstTanks:
+                            Control: Classic/ListBox@2.3.0
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              Color: =gblTheme.TextSecondary
+                              DisplayFields: '=["Title"]'
+                              Font: =Font.'Segoe UI'
+                              Height: =80
+                              HintText: ="Select tank(s) to inspect..."
+                              Items: =colFacilityTanks
+                              OnChange: =Set(gblSelectedTanks, Self.SelectedItems)
+                              SelectMultiple: =true
+                              Size: =12 * gblDevice.FontScale
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =125
+                  - conInspectionType:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        DropShadow: =DropShadow.Regular
+                        Fill: =gblTheme.Surface
+                        Height: =100
+                        RadiusBottomLeft: =8
+                        RadiusBottomRight: =8
+                        RadiusTopLeft: =8
+                        RadiusTopRight: =8
+                        Width: =Parent.Width
+                        Y: =240
+                      Children:
+                        - lblInspectionType:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Semibold
+                              Height: =25
+                              Size: =14 * gblDevice.FontScale
+                              Text: ="Inspection Type:"
+                              Width: =200
+                              X: =20
+                              Y: =20
+                        - radInspectionType:
+                            Control: Classic/Radio@2.3.0
+                            Properties:
+                              Default: ="AST"
+                              Font: =Font.'Segoe UI'
+                              Items: =["AST Inspection", "SPCC Review", "Combined AST/SPCC"]
+                              Items.Value: =Value
+                              Layout: =Layout.Horizontal
+                              OnChange: =Set(gblASTInspectionType, Self.Selected.Value)
+                              RadioBackgroundFill: =gblTheme.Surface
+                              RadioBorderColor: =gblTheme.Border
+                              Size: =13 * gblDevice.FontScale
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =50
+                  - conCategoryTabs:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        DropShadow: =DropShadow.Regular
+                        Fill: =gblTheme.Surface
+                        Height: =120
+                        RadiusBottomLeft: =8
+                        RadiusBottomRight: =8
+                        RadiusTopLeft: =8
+                        RadiusTopRight: =8
+                        Width: =Parent.Width
+                        Y: =360
+                      Children:
+                        - galCategories:
+                            Control: Gallery@2.15.0
+                            Variant: BrowseLayout_Horizontal_OneTextVariant_ver5.0
+                            Properties:
+                              BorderColor: =RGBA(0, 0, 0, 0)
+                              Height: =100
+                              Items: =Distinct(colASTQuestions, Category)
+                              ShowScrollbar: =true
+                              TemplateSize: =180
+                              Width: =Parent.Width - 20
+                              WrapCount: =1
+                              X: =10
+                              Y: =10
+                            Children:
+                              - btnCategory:
+                                  Control: Classic/Button@2.2.0
+                                  Properties:
+                                    BorderColor: |-
+                                      =If(
+                                          locCurrentCategory = ThisItem.Result,
+                                          gblTheme.Warning,
+                                          gblTheme.Border
+                                      )
+                                    BorderThickness: |-
+                                      =If(
+                                          locCurrentCategory = ThisItem.Result,
+                                          3,
+                                          1
+                                      )
+                                    Color: |-
+                                      =If(
+                                          locCurrentCategory = ThisItem.Result,
+                                          gblTheme.Warning,
+                                          gblTheme.TextSecondary
+                                      )
+                                    Fill: =gblTheme.Surface
+                                    Font: =Font.'Segoe UI'
+                                    FontWeight: |-
+                                      =If(
+                                          locCurrentCategory = ThisItem.Result,
+                                          FontWeight.Bold,
+                                          FontWeight.Normal
+                                      )
+                                    Height: =80
+                                    OnSelect: =UpdateContext({locCurrentCategory: ThisItem.Result})
+                                    RadiusBottomLeft: =6
+                                    RadiusBottomRight: =6
+                                    RadiusTopLeft: =6
+                                    RadiusTopRight: =6
+                                    Size: =11 * gblDevice.FontScale
+                                    Text: =ThisItem.Result
+                                    Width: =Parent.TemplateWidth - 10
+                  - galASTQuestions:
+                      Control: Gallery@2.15.0
+                      Variant: BrowseLayout_Vertical_TwoTextVariant_ver5.0
+                      Properties:
+                        BorderColor: =RGBA(0, 0, 0, 0)
+                        Fill: =gblTheme.Background
+                        Height: =900
+                        Items: |-
+                          =Filter(
+                              colASTQuestions,
+                              Category = locCurrentCategory
+                          )
+                        ShowScrollbar: =true
+                        TemplateSize: =120
+                        Width: =Parent.Width
+                        Y: =500
+                      Children:
+                        - conASTQuestion:
+                            Control: GroupContainer@1.3.0
+                            Variant: ManualLayout
+                            Properties:
+                              DropShadow: =DropShadow.Regular
+                              Fill: =gblTheme.Surface
+                              Height: =110
+                              RadiusBottomLeft: =8
+                              RadiusBottomRight: =8
+                              RadiusTopLeft: =8
+                              RadiusTopRight: =8
+                              Width: =Parent.TemplateWidth - 20
+                              X: =10
+                            Children:
+                              - lblASTQuestionID:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    Color: =gblTheme.TextTertiary
+                                    Font: =Font.'Segoe UI'
+                                    FontWeight: =FontWeight.Semibold
+                                    Height: =20
+                                    Size: =10 * gblDevice.FontScale
+                                    Text: =ThisItem.ID
+                                    Width: =60
+                                    X: =15
+                                    Y: =10
+                              - lblASTQuestion:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    Color: =gblTheme.TextSecondary
+                                    Font: =Font.'Segoe UI'
+                                    Height: =40
+                                    Size: =13 * gblDevice.FontScale
+                                    Text: =ThisItem.Question
+                                    Width: =Parent.Width - 100
+                                    X: =15
+                                    Y: =35
+                              - chkPass:
+                                  Control: Classic/CheckBox@2.1.0
+                                  Properties:
+                                    CheckmarkFill: =gblTheme.Success
+                                    Font: =Font.'Segoe UI'
+                                    Height: =30
+                                    OnCheck: |-
+                                      =Patch(
+                                          colASTQuestions,
+                                          LookUp(colASTQuestions, ID = ThisItem.ID),
+                                          {Finding: "Pass", Severity: ""}
+                                      );
+                                      UpdateContext({locRefresh: !locRefresh})
+                                    Size: =12 * gblDevice.FontScale
+                                    Text: ="✓ Pass"
+                                    Width: =90
+                                    X: =15
+                                    Y: =75
+                              - chkMinor:
+                                  Control: Classic/CheckBox@2.1.0
+                                  Properties:
+                                    CheckmarkFill: =gblTheme.Warning
+                                    Font: =Font.'Segoe UI'
+                                    Height: =30
+                                    OnCheck: |-
+                                      =Patch(
+                                          colASTQuestions,
+                                          LookUp(colASTQuestions, ID = ThisItem.ID),
+                                          {Finding: "Fail", Severity: "Minor"}
+                                      );
+                                      UpdateContext({
+                                          locMinorCount: locMinorCount + 1,
+                                          locASTScore: Max(0, 100 - (locMajorCount * 15) - (locMinorCount * 5))
+                                      })
+                                    Size: =12 * gblDevice.FontScale
+                                    Text: ="⚠️ Minor"
+                                    Width: =100
+                                    X: =115
+                                    Y: =75
+                              - chkMajor:
+                                  Control: Classic/CheckBox@2.1.0
+                                  Properties:
+                                    CheckmarkFill: =gblTheme.Error
+                                    Font: =Font.'Segoe UI'
+                                    Height: =30
+                                    OnCheck: |-
+                                      =Patch(
+                                          colASTQuestions,
+                                          LookUp(colASTQuestions, ID = ThisItem.ID),
+                                          {Finding: "Fail", Severity: "Major"}
+                                      );
+                                      UpdateContext({
+                                          locMajorCount: locMajorCount + 1,
+                                          locASTScore: Max(0, 100 - (locMajorCount * 15) - (locMinorCount * 5))
+                                      })
+                                    Size: =12 * gblDevice.FontScale
+                                    Text: ="❌ Major"
+                                    Width: =100
+                                    X: =225
+                                    Y: =75
+                  - conScore:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        DropShadow: =DropShadow.Semibold
+                        Fill: |-
+                          =If(
+                              locASTScore >= 90,
+                              gblTheme.SuccessLight,
+                              If(locASTScore >= 70, gblTheme.WarningLight, gblTheme.ErrorLight)
+                          )
+                        Height: =120
+                        RadiusBottomLeft: =8
+                        RadiusBottomRight: =8
+                        RadiusTopLeft: =8
+                        RadiusTopRight: =8
+                        Width: =Parent.Width
+                        Y: =1420
+                      Children:
+                        - lblScoreTitle:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Bold
+                              Height: =25
+                              Size: =16 * gblDevice.FontScale
+                              Text: ="Inspection Score"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =15
+                        - lblScore:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: |-
+                                =If(
+                                    locASTScore >= 90,
+                                    gblTheme.Success,
+                                    If(locASTScore >= 70, gblTheme.Warning, gblTheme.Error)
+                                )
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Bold
+                              Height: =50
+                              Size: =36 * gblDevice.FontScale
+                              Text: =Text(locASTScore, "0")
+                              Width: =150
+                              X: =20
+                              Y: =50
+                        - lblFindings:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              Height: =30
+                              Size: =14 * gblDevice.FontScale
+                              Text: ="Major: " & locMajorCount & " | Minor: " & locMinorCount
+                              Width: =300
+                              X: =180
+                              Y: =60
+                  - conActions:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        DropShadow: =DropShadow.Regular
+                        Fill: =gblTheme.Surface
+                        Height: =100
+                        RadiusBottomLeft: =8
+                        RadiusBottomRight: =8
+                        RadiusTopLeft: =8
+                        RadiusTopRight: =8
+                        Width: =Parent.Width
+                        Y: =1560
+                      Children:
+                        - btnCancelAST:
+                            Control: Classic/Button@2.2.0
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              Color: =gblTheme.TextSecondary
+                              Fill: =gblTheme.Surface
+                              Font: =Font.'Segoe UI'
+                              Height: =60
+                              OnSelect: =Navigate(scrMenu, ScreenTransition.UnCoverRight)
+                              RadiusBottomLeft: =6
+                              RadiusBottomRight: =6
+                              RadiusTopLeft: =6
+                              RadiusTopRight: =6
+                              Size: =14 * gblDevice.FontScale
+                              Text: ="Cancel"
+                              Width: =150
+                              X: =20
+                              Y: =20
+                        - btnSaveAST:
+                            Control: Classic/Button@2.2.0
+                            Properties:
+                              BorderColor: =gblTheme.Success
+                              Color: =gblTheme.TextPrimary
+                              DisplayMode: |-
+                                =If(
+                                    IsBlank(gblSelectedFacility) || CountRows(gblSelectedTanks) = 0,
+                                    DisplayMode.Disabled,
+                                    DisplayMode.Edit
+                                )
+                              Fill: =gblTheme.Success
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Bold
+                              Height: =60
+                              OnSelect: |-
+                                =With(
+                                    {
+                                        reviewRecord: Patch(
+                                            'SPCC and AST Reviews',
+                                            Defaults('SPCC and AST Reviews'),
+                                            {
+                                                Title: gblASTInspectionType & " - " & gblSelectedFacility.Title & " - " & Text(Today(), "mm/dd/yyyy"),
+                                                Facility: {
+                                                    '@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedReference",
+                                                    Id: gblSelectedFacility.ID,
+                                                    Value: gblSelectedFacility.Title
+                                                },
+                                                TypeofReview: {
+                                                    '@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedReference",
+                                                    Value: gblASTInspectionType
+                                                },
+                                                DateofReview: Today(),
+                                                Auditor: {
+                                                    '@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedReference",
+                                                    Value: User().FullName
+                                                },
+                                                TankType: {
+                                                    '@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedReference",
+                                                    Value: First(gblSelectedTanks).'Tank Type'.Value
+                                                },
+                                                Pass_x002f_Fail: {
+                                                    '@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedReference",
+                                                    Value: If(locASTScore >= 70, "Pass", "Fail")
+                                                },
+                                                NumberofFindings: locMajorCount + locMinorCount,
+                                                NumberofMajorFindings: locMajorCount,
+                                                NumberofMinorFindings: locMinorCount,
+                                                Score: locASTScore,
+                                                Division: {
+                                                    '@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedReference",
+                                                    Value: gblSelectedFacility.Division
+                                                },
+                                                _ExtendedDescription: Concatenate(
+                                                    ForAll(
+                                                        Filter(colASTQuestions, Finding = "Fail"),
+                                                        ID & ": " & Question & " [" & Severity & "]<br>"
+                                                    ).Value
+                                                )
+                                            }
+                                        )
+                                    },
+                                    If(
+                                        !IsBlank(reviewRecord),
+                                        Notify("AST/SPCC Review saved successfully!", NotificationType.Success, 3000);
+                                        Navigate(scrMenu, ScreenTransition.UnCoverRight),
+                                        Notify("Error saving review. Please try again.", NotificationType.Error, 3000)
+                                    )
+                                )
+                              RadiusBottomLeft: =6
+                              RadiusBottomRight: =6
+                              RadiusTopLeft: =6
+                              RadiusTopRight: =6
+                              Size: =14 * gblDevice.FontScale
+                              Text: ="💾 Save AST/SPCC Review"
+                              Width: =250
+                              X: =Parent.Width - 270
+                              Y: =20

@@ -1,0 +1,52 @@
+{
+  "Resources": [
+    {
+      "Name": "SampleImage",
+      "Schema": "i",
+      "IsSampleData": true,
+      "IsWritable": false,
+      "Type": "ResourceInfo",
+      "FileName": "/ctrllib/image/images/SampleImage.svg",
+      "Path": "/ctrllib/image/images/SampleImage.svg",
+      "Content": "Image",
+      "ResourceKind": "Uri",
+      "RootPath": "ms-appx:///ctrllib/image/images/SampleImage.svg"
+    },
+    {
+      "Name": "Environmental Compliance",
+      "Schema": "i",
+      "IsSampleData": false,
+      "IsWritable": false,
+      "Type": "ResourceInfo",
+      "FileName": "62dcbf01-36c2-40fd-b14c-6e46ffb7fbdd.png",
+      "Path": "Assets\\Images\\62dcbf01-36c2-40fd-b14c-6e46ffb7fbdd.png",
+      "Content": "Image",
+      "ResourceKind": "LocalFile",
+      "RootPath": "https://dsprdil106eus.blob.core.windows.net/dc8960c4-4e41-4a2d-a304-b564b0ebabe1-1/resource/NjJkY2JmMDEtMzZjMi00MGZkLWIxNGMtNmU0NmZmYjdmYmRk.png?skoid=58690ece-ec83-4ce2-9ce8-883d4d6a54ee&sktid=975f013f-7f24-47e8-a7d3-abc4752bf346&skt=2025-10-29T17%3A19%3A36Z&ske=2025-10-30T17%3A34%3A36Z&sks=b&skv=2023-01-03&sv=2023-01-03&spr=https&se=2025-10-30T17%3A34%3A36Z&sr=b&sp=r&sig=SyMmdO8c8zCBd4%2FTPQaFQGIYxlfvFRyO1bsXqCdIUFY%3D"
+    },
+    {
+      "Name": "ECAppBG",
+      "Schema": "i",
+      "IsSampleData": false,
+      "IsWritable": false,
+      "Type": "ResourceInfo",
+      "FileName": "8a5ee827-46e6-4bef-a6e6-cbcaf7f23778.png",
+      "Path": "Assets\\Images\\8a5ee827-46e6-4bef-a6e6-cbcaf7f23778.png",
+      "Content": "Image",
+      "ResourceKind": "LocalFile",
+      "RootPath": "https://dsprdil106eus.blob.core.windows.net/dc8960c4-4e41-4a2d-a304-b564b0ebabe1-1/resource/OGE1ZWU4MjctNDZlNi00YmVmLWE2ZTYtY2JjYWY3ZjIzNzc4.png?skoid=58690ece-ec83-4ce2-9ce8-883d4d6a54ee&sktid=975f013f-7f24-47e8-a7d3-abc4752bf346&skt=2025-10-29T17%3A19%3A36Z&ske=2025-10-30T17%3A34%3A36Z&sks=b&skv=2023-01-03&sv=2023-01-03&spr=https&se=2025-10-30T17%3A34%3A36Z&sr=b&sp=r&sig=TSn4GgM2xoc%2FLq693YrYjkNZfWpfDjySOUvnvlvzio4%3D"
+    },
+    {
+      "Name": "HeroImage_CH",
+      "Schema": "i",
+      "IsSampleData": false,
+      "IsWritable": false,
+      "Type": "ResourceInfo",
+      "FileName": "aaa06eae-22ab-4487-9179-7b2e2d8e4d5a.png",
+      "Path": "Assets\\Images\\aaa06eae-22ab-4487-9179-7b2e2d8e4d5a.png",
+      "Content": "Image",
+      "ResourceKind": "LocalFile",
+      "RootPath": "https://dsprdil106eus.blob.core.windows.net/dc8960c4-4e41-4a2d-a304-b564b0ebabe1-1/resource/YWFhMDZlYWUtMjJhYi00NDg3LTkxNzktN2IyZTJkOGU0ZDVh.png?skoid=58690ece-ec83-4ce2-9ce8-883d4d6a54ee&sktid=975f013f-7f24-47e8-a7d3-abc4752bf346&skt=2025-10-29T17%3A19%3A36Z&ske=2025-10-30T17%3A34%3A36Z&sks=b&skv=2023-01-03&sv=2023-01-03&spr=https&se=2025-10-30T17%3A34%3A36Z&sr=b&sp=r&sig=i%2BkhCkc8MRGLOZ7sRnHJBfeM7%2BcB9zRHEfyUoLZoVlM%3D"
+    }
+  ]
+}
