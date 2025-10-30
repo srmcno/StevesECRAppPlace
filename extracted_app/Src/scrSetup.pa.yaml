@@ -12,7 +12,24 @@ Screens:
       Fill: =gblTheme.Background
       LoadingSpinnerColor: =gblTheme.Accent
       OnVisible: |-
-        =Clear(colPreviousFindings);
+        =Set(
+            gblDevice,
+            {
+                Width: App.Width,
+                Height: App.Height,
+                IsPhone: App.Width < 768,
+                IsTablet: App.Width >= 768 And App.Width < 1024,
+                IsDesktop: App.Width >= 1024,
+                Padding: If(App.Width < 768, 12, If(App.Width < 1024, 20, 36)),
+                HeaderHeight: If(App.Width < 768, 56, If(App.Width < 1024, 72, 88)),
+                ButtonHeight: If(App.Width < 768, 64, If(App.Width < 1024, 76, 90)),
+                InputHeight: If(App.Width < 768, 48, 60),
+                CardRadius: If(App.Width < 768, 6, 10),
+                ButtonRadius: If(App.Width < 768, 6, 8),
+                FontScale: If(App.Width < 768, 0.9, If(App.Width < 1024, 0.95, 1))
+            }
+        );
+        Clear(colPreviousFindings);
         UpdateContext({
             locSetupComplete: false,
             locLocationCaptured: false,

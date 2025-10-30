@@ -12,15 +12,26 @@ Screens:
       Fill: =gblTheme.Background
       LoadingSpinnerColor: =gblTheme.Accent
       OnVisible: |-
-        =UpdateContext({locCurrentAuditStep: 1});
-        // Recalculate score on load
-        Set(gblAuditScore, 
-            Max(0, gblScoringWeights.BaseScore - (
-                CountRows(Filter(colFindings, Severity = "Major")) * gblScoringWeights.Major +
-                CountRows(Filter(colFindings, Severity = "Minor")) * gblScoringWeights.Minor +
-                CountRows(Filter(colFindings, Severity = "Observation")) * gblScoringWeights.Observation
-            ))
+        =Set(
+            gblDevice,
+            {
+                Width: App.Width,
+                Height: App.Height,
+                IsPhone: App.Width < 768,
+                IsTablet: App.Width >= 768 And App.Width < 1024,
+                IsDesktop: App.Width >= 1024,
+                Padding: If(App.Width < 768, 12, If(App.Width < 1024, 20, 36)),
+                HeaderHeight: If(App.Width < 768, 56, If(App.Width < 1024, 72, 88)),
+                ButtonHeight: If(App.Width < 768, 64, If(App.Width < 1024, 76, 90)),
+                InputHeight: If(App.Width < 768, 48, 60),
+                CardRadius: If(App.Width < 768, 6, 10),
+                ButtonRadius: If(App.Width < 768, 6, 8),
+                FontScale: If(App.Width < 768, 0.9, If(App.Width < 1024, 0.95, 1))
+            }
         );
+        UpdateContext({locCurrentAuditStep: 1});
+        // Recalculate score on load
+        Select(btnRecalculateScore);
     Children:
       - hedAuditHeader:
           Control: Header@0.0.44
@@ -30,9 +41,41 @@ Screens:
             BorderThickness: =1
             Fill: =gblTheme.Surface
             FontColor: =gblTheme.PrimaryDark
-            Height: =90
+            Height: =gblDevice.HeaderHeight
             Title: =gblSelectedFacility.Title & " - " & gblAuditType & " Audit"
             TitleFontSize: =20 * gblDevice.FontScale
+      - btnRecalculateScore:
+          Control: Classic/Button@2.2.0
+          Properties:
+            Height: =0
+            OnSelect: |-
+              =Set(
+                  gblAuditScore,
+                  With(
+                      {
+                          penaltyTable: AddColumns(
+                              colFindings,
+                              "Penalty",
+                              Switch(
+                                  Severity,
+                                  "Major", gblScoringWeights.Major,
+                                  "Minor", gblScoringWeights.Minor,
+                                  "Observation", gblScoringWeights.Observation,
+                                  0
+                              )
+                          )
+                      },
+                      Max(
+                          0,
+                          gblScoringWeights.BaseScore - Sum(penaltyTable, Penalty)
+                      )
+                  )
+              )
+            Text: =""
+            Visible: =false
+            Width: =0
+            X: =0
+            Y: =0
       - conAddFindingDialog:
           Control: GroupContainer@1.3.0
           Variant: ManualLayout
@@ -226,13 +269,7 @@ Screens:
                           Reset(chkFixedOnSite);
                           Set(varIsMajor, false);
                           Set(varFixedOnSite, false);
-                          Set(gblAuditScore, 
-                              Max(0, gblScoringWeights.BaseScore - (
-                                  CountRows(Filter(colFindings, Severity = "Major")) * gblScoringWeights.Major +
-                                  CountRows(Filter(colFindings, Severity = "Minor")) * gblScoringWeights.Minor +
-                                  CountRows(Filter(colFindings, Severity = "Observation")) * gblScoringWeights.Observation
-                              ))
-                          );
+                          Select(btnRecalculateScore);
                           Notify("Finding added successfully", NotificationType.Success);
                         RadiusBottomLeft: =8
                         RadiusBottomRight: =8
@@ -375,6 +412,7 @@ Screens:
                                               Issue = ThisItem.Flag
                                           )
                                       );
+                                      Select(btnRecalculateScore);
                                     OnUncheck: |-
                                       =If(
                                           ThisItem.IsNegative,
@@ -397,13 +435,7 @@ Screens:
                                           );
                                           Notify("Site condition issue flagged - review in Step 5", NotificationType.Information, 2000);
                                       );
-                                      Set(gblAuditScore, 
-                                          Max(0, gblScoringWeights.BaseScore - (
-                                              CountRows(Filter(colFindings, Severity = "Major")) * gblScoringWeights.Major +
-                                              CountRows(Filter(colFindings, Severity = "Minor")) * gblScoringWeights.Minor +
-                                              CountRows(Filter(colFindings, Severity = "Observation")) * gblScoringWeights.Observation
-                                          ))
-                                      );
+                                      Select(btnRecalculateScore);
                                     TrueFill: =If(ThisItem.IsNegative, gblTheme.Warning, gblTheme.Success)
                                     TrueText: =If(ThisItem.IsNegative, "Yes", "No")
                                     Width: =120
@@ -657,12 +689,14 @@ Screens:
                                                 LookUp(colFindings, FindingID = ThisItem.FindingID),
                                                 {Severity: "Critical"}
                                             );
+                                            Select(btnRecalculateScore);
                                           OnUncheck: |-
                                             =Patch(
                                                 colFindings,
                                                 LookUp(colFindings, FindingID = ThisItem.FindingID),
                                                 {Severity: "Minor"}
                                             );
+                                            Select(btnRecalculateScore);
                                           TrueFill: =gblTheme.Error
                                           TrueText: ="Critical"
                                           Width: =100
@@ -677,6 +711,7 @@ Screens:
                                           OnSelect: |-
                                             =Remove(colFindings, ThisItem);
                                             RemoveIf(colFindingPhotos, FindingID = ThisItem.FindingID);
+                                            Select(btnRecalculateScore);
                                             Notify("Hazard removed", NotificationType.Information);
                                           Width: =30
                                           X: =Parent.Width - 60
@@ -708,13 +743,7 @@ Screens:
                                           }
                                       );
                                       Notify("Hazard added - edit details in Step 5", NotificationType.Information, 2000);
-                                      Set(gblAuditScore, 
-                                          Max(0, gblScoringWeights.BaseScore - (
-                                              CountRows(Filter(colFindings, Severity = "Major")) * gblScoringWeights.Major +
-                                              CountRows(Filter(colFindings, Severity = "Minor")) * gblScoringWeights.Minor +
-                                              CountRows(Filter(colFindings, Severity = "Observation")) * gblScoringWeights.Observation
-                                          ))
-                                      );
+                                      Select(btnRecalculateScore);
                                     RadiusBottomLeft: =8
                                     RadiusBottomRight: =8
                                     RadiusTopLeft: =8
@@ -1534,6 +1563,17 @@ Screens:
                                                 Default: =ThisItem.ProperStorage
                                                 FalseText: ="Storage?"
                                                 Height: =40
+                                                OnCheck: |-
+                                                  =RemoveIf(
+                                                      colFindings,
+                                                      Issue = "Improper storage: " & ThisItem.Title
+                                                  );
+                                                  Patch(
+                                                      colInventories,
+                                                      LookUp(colInventories, InventoryID = ThisItem.InventoryID),
+                                                      {ProperStorage: true}
+                                                  );
+                                                  Select(btnRecalculateScore);
                                                 OnUncheck: |-
                                                   =Collect(
                                                       colFindings,
@@ -1559,13 +1599,7 @@ Screens:
                                                       LookUp(colInventories, InventoryID = ThisItem.InventoryID),
                                                       {ProperStorage: false}
                                                   );
-                                                  Set(gblAuditScore, 
-                                                      Max(0, gblScoringWeights.BaseScore - (
-                                                          CountRows(Filter(colFindings, Severity = "Major")) * gblScoringWeights.Major +
-                                                          CountRows(Filter(colFindings, Severity = "Minor")) * gblScoringWeights.Minor +
-                                                          CountRows(Filter(colFindings, Severity = "Observation")) * gblScoringWeights.Observation
-                                                      ))
-                                                  );
+                                                  Select(btnRecalculateScore);
                                                 TrueFill: =gblTheme.Success
                                                 TrueText: ="OK"
                                                 Width: =If(gblDevice.IsPhone, 70, 80)
@@ -1578,6 +1612,17 @@ Screens:
                                                 Default: =ThisItem.Labeled
                                                 FalseText: ="Label?"
                                                 Height: =40
+                                                OnCheck: |-
+                                                  =RemoveIf(
+                                                      colFindings,
+                                                      Issue = "Not labeled: " & ThisItem.Title
+                                                  );
+                                                  Patch(
+                                                      colInventories,
+                                                      LookUp(colInventories, InventoryID = ThisItem.InventoryID),
+                                                      {Labeled: true}
+                                                  );
+                                                  Select(btnRecalculateScore);
                                                 OnUncheck: |-
                                                   =Collect(
                                                       colFindings,
@@ -1603,6 +1648,7 @@ Screens:
                                                       LookUp(colInventories, InventoryID = ThisItem.InventoryID),
                                                       {Labeled: false}
                                                   );
+                                                  Select(btnRecalculateScore);
                                                 TrueFill: =gblTheme.Success
                                                 TrueText: ="OK"
                                                 Width: =If(gblDevice.IsPhone, 70, 80)
@@ -1615,6 +1661,17 @@ Screens:
                                                 Default: =ThisItem.MSDSAvailable
                                                 FalseText: ="MSDS?"
                                                 Height: =40
+                                                OnCheck: |-
+                                                  =RemoveIf(
+                                                      colFindings,
+                                                      Issue = "No MSDS: " & ThisItem.Title
+                                                  );
+                                                  Patch(
+                                                      colInventories,
+                                                      LookUp(colInventories, InventoryID = ThisItem.InventoryID),
+                                                      {MSDSAvailable: true}
+                                                  );
+                                                  Select(btnRecalculateScore);
                                                 OnUncheck: |-
                                                   =Collect(
                                                       colFindings,
@@ -1640,13 +1697,7 @@ Screens:
                                                       LookUp(colInventories, InventoryID = ThisItem.InventoryID),
                                                       {MSDSAvailable: false}
                                                   );
-                                                  Set(gblAuditScore, 
-                                                      Max(0, gblScoringWeights.BaseScore - (
-                                                          CountRows(Filter(colFindings, Severity = "Major")) * gblScoringWeights.Major +
-                                                          CountRows(Filter(colFindings, Severity = "Minor")) * gblScoringWeights.Minor +
-                                                          CountRows(Filter(colFindings, Severity = "Observation")) * gblScoringWeights.Observation
-                                                      ))
-                                                  );
+                                                  Select(btnRecalculateScore);
                                                 TrueFill: =gblTheme.Success
                                                 TrueText: ="OK"
                                                 Visible: =!gblDevice.IsPhone
@@ -1816,6 +1867,12 @@ Screens:
                                           Color: =gblTheme.TextSecondary
                                           FalseText: ="No"
                                           Height: =40
+                                          OnCheck: |-
+                                            =RemoveIf(
+                                                colFindings,
+                                                Issue = "No secondary containment"
+                                            );
+                                            Select(btnRecalculateScore);
                                           OnUncheck: |-
                                             =Collect(
                                                 colFindings,
@@ -1844,13 +1901,7 @@ Screens:
                                                     AuditStep: 2
                                                 }
                                             );
-                                            Set(gblAuditScore, 
-                                                Max(0, gblScoringWeights.BaseScore - (
-                                                    CountRows(Filter(colFindings, Severity = "Major")) * gblScoringWeights.Major +
-                                                    CountRows(Filter(colFindings, Severity = "Minor")) * gblScoringWeights.Minor +
-                                                    CountRows(Filter(colFindings, Severity = "Observation")) * gblScoringWeights.Observation
-                                                ))
-                                            );
+                                            Select(btnRecalculateScore);
                                             Notify("Storage finding added", NotificationType.Information, 2000)
                                           TrueFill: =gblTheme.Success
                                           TrueText: ="Yes"
@@ -1886,6 +1937,12 @@ Screens:
                                           Color: =gblTheme.TextSecondary
                                           FalseText: ="No"
                                           Height: =40
+                                          OnCheck: |-
+                                            =RemoveIf(
+                                                colFindings,
+                                                Issue = "Unlabeled chemical containers"
+                                            );
+                                            Select(btnRecalculateScore);
                                           OnUncheck: |-
                                             =Collect(
                                                 colFindings,
@@ -1914,13 +1971,7 @@ Screens:
                                                     AuditStep: 2
                                                 }
                                             );
-                                            Set(gblAuditScore, 
-                                                Max(0, gblScoringWeights.BaseScore - (
-                                                    CountRows(Filter(colFindings, Severity = "Major")) * gblScoringWeights.Major +
-                                                    CountRows(Filter(colFindings, Severity = "Minor")) * gblScoringWeights.Minor +
-                                                    CountRows(Filter(colFindings, Severity = "Observation")) * gblScoringWeights.Observation
-                                                ))
-                                            );
+                                            Select(btnRecalculateScore);
                                             Notify("Labeling finding added", NotificationType.Information, 2000)
                                           TrueFill: =gblTheme.Success
                                           TrueText: ="Yes"
@@ -2087,6 +2138,12 @@ Screens:
                                           Color: =gblTheme.TextSecondary
                                           FalseText: ="No"
                                           Height: =40
+                                          OnCheck: |-
+                                            =RemoveIf(
+                                                colFindings,
+                                                Issue = "Title V air permit missing"
+                                            );
+                                            Select(btnRecalculateScore);
                                           OnUncheck: |-
                                             =If(
                                                 togGenerators.Value,
@@ -2117,13 +2174,7 @@ Screens:
                                                         AuditStep: 2
                                                     }
                                                 );
-                                                Set(gblAuditScore, 
-                                                    Max(0, gblScoringWeights.BaseScore - (
-                                                        CountRows(Filter(colFindings, Severity = "Major")) * gblScoringWeights.Major +
-                                                        CountRows(Filter(colFindings, Severity = "Minor")) * gblScoringWeights.Minor +
-                                                        CountRows(Filter(colFindings, Severity = "Observation")) * gblScoringWeights.Observation
-                                                    ))
-                                                );
+                                                Select(btnRecalculateScore);
                                                 Notify("Air permit finding added", NotificationType.Information, 2000)
                                             )
                                           TrueFill: =gblTheme.Success
@@ -3228,13 +3279,7 @@ Screens:
                                           LookUp(colFindings, FindingID = ThisItem.FindingID),
                                           {Severity: Self.Selected.Value}
                                       );
-                                      Set(gblAuditScore, 
-                                          Max(0, gblScoringWeights.BaseScore - (
-                                              CountRows(Filter(colFindings, Severity = "Major")) * gblScoringWeights.Major +
-                                              CountRows(Filter(colFindings, Severity = "Minor")) * gblScoringWeights.Minor +
-                                              CountRows(Filter(colFindings, Severity = "Observation")) * gblScoringWeights.Observation
-                                          ))
-                                      );
+                                      Select(btnRecalculateScore);
                                     Size: =If(gblDevice.IsPhone, 11, 13) * gblDevice.FontScale
                                     Width: =If(gblDevice.IsPhone, 110, 130)
                                     X: =If(gblDevice.IsPhone, 20, Parent.Width - 150)
@@ -3318,13 +3363,7 @@ Screens:
                                     OnSelect: |-
                                       =Remove(colFindings, ThisItem);
                                       RemoveIf(colFindingPhotos, FindingID = ThisItem.FindingID);
-                                      Set(gblAuditScore, 
-                                          Max(0, gblScoringWeights.BaseScore - (
-                                              CountRows(Filter(colFindings, Severity = "Major")) * gblScoringWeights.Major +
-                                              CountRows(Filter(colFindings, Severity = "Minor")) * gblScoringWeights.Minor +
-                                              CountRows(Filter(colFindings, Severity = "Observation")) * gblScoringWeights.Observation
-                                          ))
-                                      );
+                                      Select(btnRecalculateScore);
                                       Notify("Finding removed", NotificationType.Information);
                                     RadiusBottomLeft: =4
                                     RadiusBottomRight: =4
