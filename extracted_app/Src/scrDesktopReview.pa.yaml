@@ -1,0 +1,557 @@
+# ************************************************************************************************
+# Warning: YAML source code for Canvas Apps should only be used to review changes made within Power Apps Studio and for minor edits (Preview).
+# Use the maker portal to create and edit your Power Apps.
+# 
+# The schema file for Canvas Apps is available at https://go.microsoft.com/fwlink/?linkid=2304907
+# 
+# For more information, visit https://go.microsoft.com/fwlink/?linkid=2292623
+# ************************************************************************************************
+Screens:
+  scrDesktopReview:
+    Properties:
+      Fill: =gblTheme.Background
+      LoadingSpinnerColor: =gblTheme.Accent
+      OnVisible: |-
+        =Clear(colDesktopReviewData);
+        UpdateContext({
+            locDesktopReviewComplete: false,
+            locReviewSaved: false
+        });
+        // Initialize new desktop review record
+        Set(gblDesktopReviewRecord, Defaults('ECR Desktop Reviews'));
+    Children:
+      - hedDesktopReviewHeader:
+          Control: Header@0.0.44
+          Properties:
+            BorderColor: =gblTheme.Border
+            BorderStyle: =BorderStyle.Solid
+            BorderThickness: =1
+            Fill: =gblTheme.Surface
+            FontColor: =gblTheme.PrimaryDark
+            Height: =90
+            Title: ="ECR Desktop Review"
+            TitleFontSize: =20 * gblDevice.FontScale
+      - svDesktopReview:
+          Control: Gallery@2.15.0
+          Variant: BrowseLayout_Vertical_TwoTextVariant_ver5.0
+          Properties:
+            BorderColor: =RGBA(245, 245, 245, 1)
+            Fill: =gblTheme.Background
+            Height: =Parent.Height - hedDesktopReviewHeader.Height - 100
+            Items: =[1]
+            ShowScrollbar: =true
+            TemplateSize: =2400
+            Width: =Parent.Width
+            Y: =hedDesktopReviewHeader.Height
+          Children:
+            - conDesktopReviewContent:
+                Control: GroupContainer@1.3.0
+                Variant: ManualLayout
+                Properties:
+                  Height: =Parent.TemplateHeight
+                  Width: =Min(900, Parent.Width - 40)
+                  X: =(Parent.Width - Self.Width) / 2
+                Children:
+                  - conInfoCard:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        BorderThickness: =1
+                        Fill: =gblTheme.Surface
+                        Height: =100
+                        RadiusBottomLeft: =8
+                        RadiusBottomRight: =8
+                        RadiusTopLeft: =8
+                        RadiusTopRight: =8
+                        Width: =Parent.Width
+                        Y: =20
+                      Children:
+                        - lblInfoTitle:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Bold
+                              Height: =30
+                              Size: =18 * gblDevice.FontScale
+                              Text: ="📋 Desktop Review Information"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =15
+                        - lblInfoDescription:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextTertiary
+                              Font: =Font.'Segoe UI'
+                              Height: =50
+                              Size: =14 * gblDevice.FontScale
+                              Text: ="Complete this review before visiting the facility. This information will be used to pre-populate the ECR audit."
+                              Width: =Parent.Width - 40
+                              Wrap: =true
+                              X: =20
+                              Y: =45
+                  - conFacilitySelection:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        BorderThickness: =1
+                        Fill: =gblTheme.Surface
+                        Height: =180
+                        RadiusBottomLeft: =8
+                        RadiusBottomRight: =8
+                        RadiusTopLeft: =8
+                        RadiusTopRight: =8
+                        Width: =Parent.Width
+                        Y: =140
+                      Children:
+                        - lblFacilityTitle:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Semibold
+                              Height: =30
+                              Size: =16 * gblDevice.FontScale
+                              Text: ="Facility *"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =20
+                        - ddDesktopFacility:
+                            Control: Classic/ComboBox@2.4.0
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              ChevronBackground: =gblTheme.Surface
+                              ChevronFill: =gblTheme.TextSecondary
+                              DisplayFields: =["Title"]
+                              Fill: =gblTheme.Surface
+                              Font: =Font.'Segoe UI'
+                              Height: =gblDevice.InputHeight
+                              InputTextPlaceholder: ="Search facilities..."
+                              Items: =Sort(colFacilities, Title, SortOrder.Ascending)
+                              OnChange: |-
+                                =Set(gblSelectedFacility, Self.Selected);
+                                If(!IsBlank(Self.Selected),
+                                    Set(gblDesktopReviewRecord, Patch(gblDesktopReviewRecord, {'Facility': Self.Selected}))
+                                )
+                              SearchFields: =["Title"]
+                              SelectMultiple: =false
+                              Size: =16 * gblDevice.FontScale
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =60
+                        - lblFacilityDetails:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextTertiary
+                              Font: =Font.'Segoe UI'
+                              Height: =40
+                              Size: =12 * gblDevice.FontScale
+                              Text: |-
+                                =If(!IsBlank(ddDesktopFacility.Selected), 
+                                    "County: " & ddDesktopFacility.Selected.'County Text' & " | " & 
+                                    "District: " & ddDesktopFacility.Selected.District & " | " &
+                                    "Type: " & ddDesktopFacility.Selected.'Facility Type',
+                                    "Please select a facility"
+                                )
+                              Width: =Parent.Width - 40
+                              Wrap: =true
+                              X: =20
+                              Y: =110
+                  - conAuditDetails:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        BorderThickness: =1
+                        Fill: =gblTheme.Surface
+                        Height: =280
+                        RadiusBottomLeft: =8
+                        RadiusBottomRight: =8
+                        RadiusTopLeft: =8
+                        RadiusTopRight: =8
+                        Width: =Parent.Width
+                        Y: =340
+                      Children:
+                        - lblAuditDetailsTitle:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Semibold
+                              Height: =30
+                              Size: =16 * gblDevice.FontScale
+                              Text: ="Audit Details *"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =20
+                        - lblAuditor:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              Size: =14 * gblDevice.FontScale
+                              Text: ="Auditor"
+                              Width: =150
+                              X: =20
+                              Y: =60
+                        - txtAuditor:
+                            Control: Classic/TextInput@2.3.2
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              Fill: =gblTheme.Surface
+                              Font: =Font.'Segoe UI'
+                              Height: =gblDevice.InputHeight
+                              OnChange: |-
+                                =Set(gblDesktopReviewRecord, Patch(gblDesktopReviewRecord, {'Auditor': Self.Text}))
+                              Size: =16 * gblDevice.FontScale
+                              Width: =Parent.Width - 200
+                              X: =180
+                              Y: =60
+                        - lblAuditDate:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              Size: =14 * gblDevice.FontScale
+                              Text: ="Audit Date *"
+                              Width: =150
+                              X: =20
+                              Y: =130
+                        - dateAuditDate:
+                            Control: Classic/DatePicker@2.3.0
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              DefaultDate: =Today()
+                              Fill: =gblTheme.Surface
+                              Font: =Font.'Segoe UI'
+                              Height: =gblDevice.InputHeight
+                              OnChange: |-
+                                =Set(gblDesktopReviewRecord, Patch(gblDesktopReviewRecord, {'AuditDate': Self.SelectedDate}))
+                              Size: =16 * gblDevice.FontScale
+                              Width: =Parent.Width - 200
+                              X: =180
+                              Y: =130
+                        - lblFacilityType:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              Size: =14 * gblDevice.FontScale
+                              Text: ="Facility Type Subcategory"
+                              Width: =150
+                              X: =20
+                              Y: =200
+                        - ddFacilityTypeSubcategory:
+                            Control: Classic/ComboBox@2.4.0
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              DisplayFields: =["Value"]
+                              Fill: =gblTheme.Surface
+                              Font: =Font.'Segoe UI'
+                              Height: =gblDevice.InputHeight
+                              Items: =Table(
+                                  {Value: "CNO Facility"},
+                                  {Value: "Housing"},
+                                  {Value: "Administrative"},
+                                  {Value: "Medical"},
+                                  {Value: "Educational"},
+                                  {Value: "Other"}
+                              )
+                              OnChange: |-
+                                =If(!IsBlank(Self.Selected),
+                                    Set(gblDesktopReviewRecord, Patch(gblDesktopReviewRecord, {'FacilityType': Self.Selected.Value}))
+                                )
+                              SearchFields: =["Value"]
+                              Size: =16 * gblDevice.FontScale
+                              Width: =Parent.Width - 200
+                              X: =180
+                              Y: =200
+                  - conDesktopReviewQuestions:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        BorderThickness: =1
+                        Fill: =gblTheme.Surface
+                        Height: =1200
+                        RadiusBottomLeft: =8
+                        RadiusBottomRight: =8
+                        RadiusTopLeft: =8
+                        RadiusTopRight: =8
+                        Width: =Parent.Width
+                        Y: =640
+                      Children:
+                        - lblQuestionsTitle:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Bold
+                              Height: =30
+                              Size: =18 * gblDevice.FontScale
+                              Text: ="📝 Desktop Review Questions"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =20
+                        - galDesktopQuestions:
+                            Control: Gallery@2.15.0
+                            Variant: BrowseLayout_Vertical_OneTextVariant_ver5.0
+                            Properties:
+                              BorderColor: =RGBA(245, 245, 245, 1)
+                              Height: =1120
+                              Items: |-
+                                =Table(
+                                    {ID: 1, Question: "Are all required permits current?", Category: "Permits", Field: "PermitsCurrent"},
+                                    {ID: 2, Question: "Is facility registration up to date?", Category: "Compliance", Field: "RegistrationCurrent"},
+                                    {ID: 3, Question: "Are environmental reports submitted on time?", Category: "Compliance", Field: "ReportsSubmitted"},
+                                    {ID: 4, Question: "Are there any outstanding violations?", Category: "Compliance", Field: "OutstandingViolations"},
+                                    {ID: 5, Question: "Is waste management documentation current?", Category: "Waste", Field: "WasteDocCurrent"},
+                                    {ID: 6, Question: "Are chemical inventories up to date?", Category: "Chemicals", Field: "ChemicalInventoryCurrent"},
+                                    {ID: 7, Question: "Is SPCC plan current and approved?", Category: "SPCC", Field: "SPCCPlanCurrent"},
+                                    {ID: 8, Question: "Are tank registrations current?", Category: "Tanks", Field: "TankRegCurrent"},
+                                    {ID: 9, Question: "Is stormwater permit current?", Category: "Stormwater", Field: "StormwaterPermitCurrent"},
+                                    {ID: 10, Question: "Are air permits current?", Category: "Air", Field: "AirPermitCurrent"},
+                                    {ID: 11, Question: "Is emergency response plan current?", Category: "Emergency", Field: "EmergencyPlanCurrent"},
+                                    {ID: 12, Question: "Are training records current?", Category: "Training", Field: "TrainingRecordsCurrent"}
+                                )
+                              ShowScrollbar: =true
+                              TemplateSize: =90
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =60
+                            Children:
+                              - recQuestionBg:
+                                  Control: Rectangle@2.3.0
+                                  Properties:
+                                    BorderColor: =gblTheme.BorderLight
+                                    BorderThickness: =1
+                                    Fill: =gblTheme.Surface
+                                    Height: =Parent.TemplateHeight - 4
+                                    Width: =Parent.Width - 8
+                                    X: =4
+                                    Y: =2
+                              - lblQuestion:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    Color: =gblTheme.TextSecondary
+                                    Font: =Font.'Segoe UI'
+                                    FontWeight: =FontWeight.Semibold
+                                    Height: =30
+                                    Size: =14 * gblDevice.FontScale
+                                    Text: =ThisItem.Question
+                                    Width: =Parent.Width - 180
+                                    Wrap: =true
+                                    X: =20
+                                    Y: =10
+                              - lblCategory:
+                                  Control: Label@2.5.1
+                                  Properties:
+                                    Color: =gblTheme.TextTertiary
+                                    Font: =Font.'Segoe UI'
+                                    FontSize: =11
+                                    Text: =ThisItem.Category
+                                    Width: =120
+                                    X: =20
+                                    Y: =45
+                              - togQuestionAnswer:
+                                  Control: Classic/Toggle@2.1.0
+                                  Properties:
+                                    Default: =false
+                                    FalseText: ="No"
+                                    Height: =35
+                                    OnCheck: |-
+                                      =Set(gblDesktopReviewRecord, Patch(gblDesktopReviewRecord, {[ThisItem.Field]: true}))
+                                    OnUncheck: |-
+                                      =Set(gblDesktopReviewRecord, Patch(gblDesktopReviewRecord, {[ThisItem.Field]: false}))
+                                    TrueFill: =gblTheme.Success
+                                    TrueText: ="Yes"
+                                    Width: =100
+                                    X: =Parent.Width - 130
+                                    Y: =25
+                  - conAdditionalNotes:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        BorderThickness: =1
+                        Fill: =gblTheme.Surface
+                        Height: =200
+                        RadiusBottomLeft: =8
+                        RadiusBottomRight: =8
+                        RadiusTopLeft: =8
+                        RadiusTopRight: =8
+                        Width: =Parent.Width
+                        Y: =1860
+                      Children:
+                        - lblNotesTitle:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              FontWeight: =FontWeight.Semibold
+                              Height: =30
+                              Size: =16 * gblDevice.FontScale
+                              Text: ="Additional Notes / Observations"
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =20
+                        - txtDesktopNotes:
+                            Control: Classic/TextInput@2.3.2
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              Font: =Font.'Segoe UI'
+                              Height: =140
+                              HintText: ="Enter any additional observations or notes from the desktop review..."
+                              Mode: =TextMode.MultiLine
+                              OnChange: |-
+                                =Set(gblDesktopReviewRecord, Patch(gblDesktopReviewRecord, {'_ExtendedDescription': Self.Text}))
+                              Size: =14 * gblDevice.FontScale
+                              Width: =Parent.Width - 40
+                              X: =20
+                              Y: =60
+                  - conSubcategory:
+                      Control: GroupContainer@1.3.0
+                      Variant: ManualLayout
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        BorderThickness: =1
+                        Fill: =gblTheme.Surface
+                        Height: =120
+                        RadiusBottomLeft: =8
+                        RadiusBottomRight: =8
+                        RadiusTopLeft: =8
+                        RadiusTopRight: =8
+                        Width: =Parent.Width
+                        Y: =2080
+                      Children:
+                        - lblSubcategory:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              Size: =14 * gblDevice.FontScale
+                              Text: ="Subcategory"
+                              Width: =150
+                              X: =20
+                              Y: =20
+                        - ddSubcategory:
+                            Control: Classic/ComboBox@2.4.0
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              DisplayFields: =["Value"]
+                              Fill: =gblTheme.Surface
+                              Font: =Font.'Segoe UI'
+                              Height: =gblDevice.InputHeight
+                              Items: =Table(
+                                  {Value: "Routine"},
+                                  {Value: "Follow-up"},
+                                  {Value: "Complaint"},
+                                  {Value: "Pre-Construction"},
+                                  {Value: "Pre-Operation"}
+                              )
+                              OnChange: |-
+                                =If(!IsBlank(Self.Selected),
+                                    Set(gblDesktopReviewRecord, Patch(gblDesktopReviewRecord, {'subcategory': Self.Selected.Value}))
+                                )
+                              SearchFields: =["Value"]
+                              Size: =16 * gblDevice.FontScale
+                              Width: =Parent.Width - 200
+                              X: =180
+                              Y: =20
+                        - lblSendTo:
+                            Control: Label@2.5.1
+                            Properties:
+                              Color: =gblTheme.TextSecondary
+                              Font: =Font.'Segoe UI'
+                              Size: =14 * gblDevice.FontScale
+                              Text: ="Send To"
+                              Width: =150
+                              X: =20
+                              Y: =70
+                        - txtSendTo:
+                            Control: Classic/TextInput@2.3.2
+                            Properties:
+                              BorderColor: =gblTheme.Border
+                              Fill: =gblTheme.Surface
+                              Font: =Font.'Segoe UI'
+                              Height: =gblDevice.InputHeight
+                              HintText: ="Email address or name"
+                              OnChange: |-
+                                =Set(gblDesktopReviewRecord, Patch(gblDesktopReviewRecord, {'SendTo': Self.Text}))
+                              Size: =16 * gblDevice.FontScale
+                              Width: =Parent.Width - 200
+                              X: =180
+                              Y: =70
+                  - btnSaveDesktopReview:
+                      Control: Classic/Button@2.2.0
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        Color: =gblTheme.TextPrimary
+                        DisabledBorderColor: =RGBA(0, 0, 0, 0)
+                        DisabledColor: =gblTheme.TextTertiary
+                        DisabledFill: =gblTheme.BorderLight
+                        DisplayMode: |-
+                          =If(
+                              !IsBlank(ddDesktopFacility.Selected) && 
+                              !IsBlank(dateAuditDate.SelectedDate) &&
+                              !IsBlank(txtAuditor.Text),
+                              DisplayMode.Edit,
+                              DisplayMode.Disabled
+                          )
+                        Fill: =gblTheme.Success
+                        Font: =Font.'Segoe UI'
+                        FontWeight: =FontWeight.Bold
+                        Height: =60
+                        HoverFill: =ColorFade(gblTheme.Success, -10%)
+                        OnSelect: |-
+                          =UpdateContext({locSaving: true});
+                          Set(gblDesktopReviewRecord, Patch(gblDesktopReviewRecord, {
+                              'Title': "Desktop Review - " & ddDesktopFacility.Selected.Title & " - " & Text(dateAuditDate.SelectedDate, "mm/dd/yyyy"),
+                              'AuditDate': dateAuditDate.SelectedDate,
+                              'Auditor': txtAuditor.Text,
+                              'Facility': ddDesktopFacility.Selected,
+                              'FacilityType': If(!IsBlank(ddFacilityTypeSubcategory.Selected), ddFacilityTypeSubcategory.Selected.Value, ""),
+                              'subcategory': If(!IsBlank(ddSubcategory.Selected), ddSubcategory.Selected.Value, ""),
+                              'SendTo': txtSendTo.Text,
+                              '_ExtendedDescription': txtDesktopNotes.Text,
+                              'WorkflowConfirmed': false,
+                              'StartWorkflow': false,
+                              'TriggerFlow': false
+                          }));
+                          Patch('ECR Desktop Reviews', Defaults('ECR Desktop Reviews'), gblDesktopReviewRecord);
+                          UpdateContext({
+                              locSaving: false,
+                              locReviewSaved: true
+                          });
+                          Notify("Desktop Review saved successfully! This information will be available when you conduct the ECR audit.", NotificationType.Success, 5000);
+                          Navigate(scrMenu, ScreenTransition.Cover)
+                        PressedFill: =ColorFade(gblTheme.Success, -20%)
+                        RadiusBottomLeft: =gblDevice.ButtonRadius
+                        RadiusBottomRight: =gblDevice.ButtonRadius
+                        RadiusTopLeft: =gblDevice.ButtonRadius
+                        RadiusTopRight: =gblDevice.ButtonRadius
+                        Size: =18 * gblDevice.FontScale
+                        Text: =If(locSaving, "Saving...", "💾 Save Desktop Review")
+                        Width: =300
+                        X: =(Parent.Width - Self.Width) / 2
+                        Y: =2230
+                  - btnCancelDesktopReview:
+                      Control: Classic/Button@2.2.0
+                      Properties:
+                        BorderColor: =gblTheme.Border
+                        Color: =gblTheme.TextSecondary
+                        Fill: =gblTheme.Surface
+                        Font: =Font.'Segoe UI'
+                        Height: =60
+                        OnSelect: =Navigate(scrMenu, ScreenTransition.Cover)
+                        RadiusBottomLeft: =gblDevice.ButtonRadius
+                        RadiusBottomRight: =gblDevice.ButtonRadius
+                        RadiusTopLeft: =gblDevice.ButtonRadius
+                        RadiusTopRight: =gblDevice.ButtonRadius
+                        Size: =16 * gblDevice.FontScale
+                        Text: ="Cancel"
+                        Width: =120
+                        X: =(Parent.Width - Self.Width) / 2 - 180
+                        Y: =2230

@@ -1,0 +1,11 @@
+{
+  "Components": [
+    {
+      "Name": "Component1",
+      "TemplateName": "567750e37a8f4f3b8615aa6cca03ad11",
+      "Description": "",
+      "AllowCustomization": true,
+      "AllowAccessToGlobals": false
+    }
+  ]
+}
