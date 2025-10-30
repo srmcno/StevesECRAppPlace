@@ -11,28 +11,69 @@ Screens:
     Properties:
       Fill: =gblTheme.Background
       LoadingSpinnerColor: '=gblTheme.Accent '
-      OnVisible: |+
-        =// Calculate final score using correct formula
-              Set(varFinalScore, 
-                  Max(0, gblScoringWeights.BaseScore - (
-                      CountRows(Filter(colFindings, Severity = "Major")) * gblScoringWeights.Major +
-                      CountRows(Filter(colFindings, Severity = "Minor")) * gblScoringWeights.Minor +
-                      CountRows(Filter(colFindings, Severity = "Observation")) * gblScoringWeights.Observation
-                  ))
-              );
-              Set(varScoreInterpretation,
-                  Switch(
-                      true,
-                      varFinalScore >= 90, "Excellent - Minimal compliance issues",
-                      varFinalScore >= 75, "Good - Minor issues to address",
-                      varFinalScore >= 60, "Fair - Several compliance issues",
-                      "Poor - Significant compliance concerns"
-                  )
-              );
-              UpdateContext({
-                  locFacilityRepRequired: true,
-                  locValidationErrors: ""
-              });
+      OnVisible: |-
+        =Set(
+            gblDevice,
+            {
+                Width: App.Width,
+                Height: App.Height,
+                IsPhone: App.Width < 768,
+                IsTablet: App.Width >= 768 And App.Width < 1024,
+                IsDesktop: App.Width >= 1024,
+                Padding: If(App.Width < 768, 12, If(App.Width < 1024, 20, 36)),
+                HeaderHeight: If(App.Width < 768, 56, If(App.Width < 1024, 72, 88)),
+                ButtonHeight: If(App.Width < 768, 64, If(App.Width < 1024, 76, 90)),
+                InputHeight: If(App.Width < 768, 48, 60),
+                CardRadius: If(App.Width < 768, 6, 10),
+                ButtonRadius: If(App.Width < 768, 6, 8),
+                FontScale: If(App.Width < 768, 0.9, If(App.Width < 1024, 0.95, 1))
+            }
+        );
+        Set(
+            varFinalScore,
+            With(
+                {
+                    penaltyTable: AddColumns(
+                        colFindings,
+                        "Penalty",
+                        Switch(
+                            Severity,
+                            "Major", gblScoringWeights.Major,
+                            "Minor", gblScoringWeights.Minor,
+                            "Observation", gblScoringWeights.Observation,
+                            0
+                        )
+                    )
+                },
+                Max(
+                    0,
+                    gblScoringWeights.BaseScore - Sum(penaltyTable, Penalty)
+                )
+            )
+        );
+        Set(
+            varScoreInterpretation,
+            With(
+                {
+                    band: First(
+                        SortByColumns(
+                            Filter(gblScoreBands, varFinalScore >= Min),
+                            "Min",
+                            SortOrder.Descending
+                        )
+                    )
+                },
+                If(
+                    !IsBlank(band),
+                    band.Label & " – " & Coalesce(band.Description, ""),
+                    "Needs Review"
+                )
+            )
+        );
+        UpdateContext({
+            locFacilityRepRequired: true,
+            locValidationErrors: ""
+        });
     Children:
       - hedSubmitHeader:
           Control: Header@0.0.44
@@ -42,7 +83,7 @@ Screens:
             BorderThickness: =1
             Fill: =gblTheme.Surface
             FontColor: =gblTheme.PrimaryDark
-            Height: =90
+            Height: =gblDevice.HeaderHeight
             Title: ="Review & Submit Audit"
             TitleFontSize: =20 * gblDevice.FontScale
       - svMainSubmit:
@@ -50,11 +91,11 @@ Screens:
           Variant: BrowseLayout_Vertical_TwoTextOneImageVariant_ver5.0
           Properties:
             BorderColor: =RGBA(245, 245, 245, 1)
-            Height: =Parent.Height - 190
+            Height: =Parent.Height - hedSubmitHeader.Height - conBottomNav.Height - gblDevice.Padding * 2
             Items: =[1]
             TemplateSize: =If(CountRows(colFindings) > 0, 2000, 1400)
             Width: =Parent.Width
-            Y: =90
+            Y: =hedSubmitHeader.Height + gblDevice.Padding
           Children:
             - conSubmitContent:
                 Control: GroupContainer@1.3.0
@@ -783,9 +824,11 @@ Screens:
             BorderColor: =gblTheme.Border
             BorderThickness: =1
             Fill: =gblTheme.Surface
-            Height: =100
+            Height: =gblDevice.ButtonHeight + gblDevice.Padding * 2
+            PaddingLeft: =gblDevice.Padding
+            PaddingRight: =gblDevice.Padding
             Width: =Parent.Width
-            Y: =Parent.Height - 100
+            Y: =Parent.Height - Self.Height
           Children:
             - btnBack:
                 Control: Classic/Button@2.2.0
@@ -796,7 +839,7 @@ Screens:
                   Fill: =gblTheme.Surface
                   Font: =Font.'Segoe UI'
                   FontWeight: =FontWeight.Bold
-                  Height: =70
+                  Height: =gblDevice.ButtonHeight
                   HoverFill: =gblTheme.SurfaceHover
                   OnSelect: =Navigate(scrAudit, ScreenTransition.Fade)
                   RadiusBottomLeft: =8
@@ -805,9 +848,9 @@ Screens:
                   RadiusTopRight: =8
                   Size: =16 * gblDevice.FontScale
                   Text: ="← Back to Audit"
-                  Width: =150
-                  X: =20
-                  Y: =15
+                  Width: =Max(160, gblDevice.ButtonHeight * 2)
+                  X: =0
+                  Y: =gblDevice.Padding
             - lblSubmitStatus:
                 Control: Label@2.5.1
                 Properties:
@@ -831,9 +874,9 @@ Screens:
                                               "Ready to submit"
                                           )
                                       )
-                  Width: =400
+                  Width: =Max(200, Parent.Width - (btnBack.Width + btnSubmit.Width) - gblDevice.Padding * 4)
                   X: =(Parent.Width - Self.Width) / 2
-                  Y: =35
+                  Y: =gblDevice.Padding + (gblDevice.ButtonHeight - Self.Height) / 2
             - btnSubmit:
                 Control: Button@0.0.45
                 Properties:
@@ -851,14 +894,13 @@ Screens:
                                                   DisplayMode.Edit,
                                                   DisplayMode.Disabled
                                               )
-                  FontSize: =16 * gblDevice.FontScale
-                  Height: =60
+                  FontSize: =If(gblDevice.IsPhone, 16, 18) * gblDevice.FontScale
+                  Height: =gblDevice.ButtonHeight
                   OnSelect: "=// ===== START SUBMISSION PROCESS =====\r\n                          Set(gblIsSubmitting, true);\r\n                          Set(varSubmitError, false);\r\n                          Set(varErrorMessage, \"\");\r\n                          \r\n                          // Validate required fields one more time\r\n                          If(\r\n                              IsBlank(txtFacilityRepName.Text) || IsBlank(txtFacilityEmail.Text),\r\n                              \r\n                              // VALIDATION FAILED\r\n                              Set(varSubmitError, true);\r\n                              Set(varErrorMessage, \"Facility representative name and email are required.\");\r\n                              Set(gblIsSubmitting, false);\r\n                              Notify(varErrorMessage, NotificationType.Error),\r\n                              \r\n                              // VALIDATION PASSED - PROCEED WITH SUBMISSION\r\n                              \r\n                              // Save facility acknowledgment\r\n                              Set(gblFacilityAcknowledgment, {\r\n                                  RepName: txtFacilityRepName.Text,\r\n                                  RepEmail: txtFacilityEmail.Text,\r\n                                  Comments: txtFacilityComments.Text,\r\n                                  SignedDate: Now(),\r\n                                  IsAcknowledged: true\r\n                              });\r\n                              \r\n                              // 1. CREATE MAIN AUDIT RECORD\r\n                              Set(varNewAuditID,\r\n                                  Patch(\r\n                                      'Audit Reports',\r\n                                      Defaults('Audit Reports'),\r\n                                      {\r\n                                          Title: gblSelectedFacility.Title & \" - ECR - \" & Text(Now(), \"[$-en-US]mmm dd, yyyy\"),\r\n                                          'Facility Title': gblSelectedFacility.Title,\r\n                                          FacilityID: gblSelectedFacility.ID,\r\n                                          'Audit Type': gblAuditType,\r\n                                          'Audit Date': Today(),\r\n                                          'Auditor Name': User().FullName,\r\n                                          'Auditor Email': User().Email,\r\n                                          'Weather Conditions': gblWeatherConditions,\r\n                                          'General Observations': gblGeneralObservations,\r\n                                          'Water System Notes': gblWaterSystemNotes,\r\n                                          'Air System Notes': gblAirSystemNotes,\r\n                                          'Storage Notes': gblStorageNotes,\r\n                                          'Odor Notes': gblOdorNotes,\r\n                                          'Final Score': varFinalScore,\r\n                                          'Score Interpretation': varScoreInterpretation,\r\n                                          'Major Findings': CountRows(Filter(colFindings, Severity = \"Major\")),\r\n                                          'Minor Findings': CountRows(Filter(colFindings, Severity = \"Minor\")),\r\n                                          Observations: CountRows(Filter(colFindings, Severity = \"Observation\")),\r\n                                          'Facility Rep Name': gblFacilityAcknowledgment.RepName,\r\n                                          'Facility Rep Email': gblFacilityAcknowledgment.RepEmail,\r\n                                          'Facility Comments': gblFacilityAcknowledgment.Comments,\r\n                                          Status: \"Complete\",\r\n                                          'GPS Latitude': gblCurrentLocation.Latitude,\r\n                                          'GPS Longitude': gblCurrentLocation.Longitude,\r\n                                          'Submitted Date': Now()\r\n                                      }\r\n                                  )\r\n                              );\r\n                              \r\n                              // 2. CHECK IF MAIN RECORD CREATED SUCCESSFULLY\r\n                              If(\r\n                                  IsError(varNewAuditID) || IsBlank(varNewAuditID) || IsBlank(varNewAuditID.ID),\r\n                                  \r\n                                  // === ERROR - MAIN RECORD FAILED ===\r\n                                  Set(gblIsSubmitting, false);\r\n                                  Set(varSubmitError, true);\r\n                                  Set(varErrorMessage, \"Failed to create audit record. Please check your connection and try again.\");\r\n                                  Notify(varErrorMessage, NotificationType.Error),\r\n                                  \r\n                                  // === SUCCESS - MAIN RECORD CREATED ===\r\n                                  // Continue with child records\r\n                                  \r\n                                  // 3. SUBMIT ALL FINDINGS TO ECR CORRECTIVE ACTIONS LIST\r\n                                  ForAll(\r\n                                      colFindings,\r\n                                      Patch(\r\n                                          'ECR Corrective Actions',\r\n                                          Defaults('ECR Corrective Actions'),\r\n                                          {\r\n                                              Title: Issue,\r\n                                              'Audit Report ID': varNewAuditID.ID,\r\n                                              'Facility L': {Value: gblSelectedFacility.Title},\r\n                                              'Finding Category (Main Choice)': {Value: Category},\r\n                                              'Severity of Finding': {Value: Severity},\r\n                                              'Major Finding Type': {Value: MajorType},\r\n                                              'Date of Finding': Today(),\r\n                                              'Finding Description': DetailedDescription,\r\n                                              'Finding Location': Location,\r\n                                              'Requirement/Regulation Violated': RequirementViolated,\r\n                                              'Recommended Corrective Action': CorrectiveAction,\r\n                                              'Responsible Party': ResponsibleParty,\r\n                                              'Corrective Action Deadline': DueDate,\r\n                                              'CA Status': {Value: If(FixedOnSite, \"Resolved\", \"Unresolved\")},\r\n                                              'Fixed On-Site': FixedOnSite,\r\n                                              'Resolution Details': FixedDescription,\r\n                                              'Follow-Up Inspection Required': FollowUpRequired,\r\n                                              'Auditor Notes': AuditorNotes,\r\n                                              'Facility Response': FacilityResponse\r\n                                          }\r\n                                      )\r\n                                  );\r\n                                  \r\n                                  // 4. GENERATE HTML REPORT\r\n                                  Set(gblReportHTML, \r\n                                      \"<!DOCTYPE html><html><head><style>body{font-family:'Segoe UI',Arial,sans-serif;margin:40px;line-height:1.6}.header{text-align:center;border-bottom:3px solid #0033A0;padding-bottom:20px;margin-bottom:30px}.header h1{color:#0033A0;margin:10px 0}.section{margin:30px 0;page-break-inside:avoid}.section-title{background-color:#0033A0;color:white;padding:12px;font-size:18px;font-weight:bold;margin-bottom:15px}.score{font-size:48px;font-weight:bold;text-align:center;margin:20px 0}.score.excellent{color:#107C10}.score.good{color:#FF8C00}.score.poor{color:#D13438}.finding{border-left:4px solid;padding:15px;margin:15px 0;background-color:#f9f9f9}.finding.major{border-color:#D13438}.finding.minor{border-color:#FF8C00}.finding-header{font-weight:bold;font-size:16px;margin-bottom:10px}table{width:100%;border-collapse:collapse;margin:15px 0}td,th{border:1px solid #ddd;padding:10px;text-align:left}th{background-color:#f2f2f2}.footer{margin-top:40px;padding-top:20px;border-top:2px solid #0033A0;text-align:center;font-size:10px;color:#666}</style></head><body><div class='header'><h1>Environmental Compliance Review</h1><h2>\" & \r\n                                      gblSelectedFacility.Title & \r\n                                      \"</h2><p><strong>Audit Date:</strong> \" & \r\n                                      Text(Today(), \"[$-en-US]mmmm dd, yyyy\") & \r\n                                      \"</p><p><strong>Auditor:</strong> \" & \r\n                                      User().FullName & \r\n                                      \"</p><p><strong>Weather:</strong> \" & \r\n                                      gblWeatherConditions & \r\n                                      \"</p></div><div class='section'><div class='section-title'>AUDIT SCORE</div><div class='score \" & \r\n                                      If(varFinalScore >= 90, \"excellent\", If(varFinalScore >= 75, \"good\", \"poor\")) & \r\n                                      \"'>\" & varFinalScore & \" / 100</div><p style='text-align:center;font-style:italic'>\" & \r\n                                      varScoreInterpretation & \r\n                                      \"</p></div><div class='section'><div class='section-title'>GENERAL SITE OBSERVATIONS</div><p>\" & \r\n                                      gblGeneralObservations & \r\n                                      \"</p></div><div class='section'><div class='section-title'>FINDINGS SUMMARY</div><table><tr><th>Severity</th><th>Count</th></tr><tr><td>Major Findings</td><td>\" & \r\n                                      CountRows(Filter(colFindings, Severity = \"Major\")) & \r\n                                      \"</td></tr><tr><td>Minor Findings</td><td>\" & \r\n                                      CountRows(Filter(colFindings, Severity = \"Minor\")) & \r\n                                      \"</td></tr><tr><td>Observations</td><td>\" & \r\n                                      CountRows(Filter(colFindings, Severity = \"Observation\")) & \r\n                                      \"</td></tr></table></div><div class='section'><div class='section-title'>DETAILED FINDINGS</div>\" & \r\n                                      If(CountRows(Filter(colFindings, Severity = \"Major\")) > 0,\r\n                                          \"<h3 style='color:#D13438'>Major Findings</h3>\" & \r\n                                          Concat(Filter(colFindings, Severity = \"Major\"),\r\n                                              \"<div class='finding major'><div class='finding-header'>\" & \r\n                                              Issue & \r\n                                              \"</div><p><strong>Category:</strong> \" & \r\n                                              Category & \r\n                                              \"</p><p><strong>Location:</strong> \" & \r\n                                              Location & \r\n                                              \"</p><p><strong>Description:</strong> \" & \r\n                                              DetailedDescription & \r\n                                              \"</p><p><strong>Corrective Action:</strong> \" & \r\n                                              CorrectiveAction & \r\n                                              \"</p></div>\", \"\"\r\n                                          ), \"\"\r\n                                      ) & \r\n                                      If(CountRows(Filter(colFindings, Severity = \"Minor\")) > 0,\r\n                                          \"<h3 style='color:#FF8C00'>Minor Findings</h3>\" & \r\n                                          Concat(Filter(colFindings, Severity = \"Minor\"),\r\n                                              \"<div class='finding minor'><div class='finding-header'>\" & \r\n                                              Issue & \r\n                                              \"</div><p><strong>Corrective Action:</strong> \" & \r\n                                              CorrectiveAction & \r\n                                              \"</p></div>\", \"\"\r\n                                          ), \"\"\r\n                                      ) & \r\n                                      \"</div><div class='section'><div class='section-title'>FACILITY ACKNOWLEDGMENT</div><p><strong>Representative:</strong> \" & \r\n                                      txtFacilityRepName.Text & \r\n                                      \"</p><p><strong>Email:</strong> \" & \r\n                                      txtFacilityEmail.Text & \r\n                                      \"</p><p><strong>Comments:</strong> \" & \r\n                                      txtFacilityComments.Text & \r\n                                      \"</p></div><div class='footer'><p><strong>Choctaw Nation of Oklahoma</strong></p><p>Environmental Protection Services</p><p>Report Generated: \" & \r\n                                      Text(Now(), \"[$-en-US]mmmm dd, yyyy hh:mm AM/PM\") & \r\n                                      \"</p></div></body></html>\"\r\n                                  );\r\n                                  \r\n                                  // 5. TRIGGER PDF GENERATION\r\n                                  tmrPDFDelay.Start\r\n                              )\r\n                          )"
                   Text: =
-                  Width: |+
-                    =200
-                  X: =549
-                  Y: =15
+                  Width: =Max(220, gblDevice.ButtonHeight * 2.5)
+                  X: =Parent.Width - Self.Width - gblDevice.Padding
+                  Y: =gblDevice.Padding
       - tmrPDFDelay:
           Control: Timer@2.1.0
           Properties:
